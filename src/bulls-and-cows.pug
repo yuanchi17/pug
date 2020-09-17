@@ -1,0 +1,126 @@
+extends layout
+
+block beforehtml
+  - const title = '猜數字遊戲'
+
+block style
+  style
+    :sass
+      [v-cloak]
+        display: none
+      #app
+        .card
+          width: 500px
+
+block content
+  #app.content.p-3.d-flex.flex-column.align-items-center(v-cloak)
+    .card.bg-light.mb-3
+      h2.card-header.text-center 猜數字遊戲
+      .card-body
+        .input-group.mb-2(v-for='(question, qId) in questions' :key='qId')
+          input.form-control(type='text' v-model='question.userAns')
+          .input-group-append
+            select.custom-select(v-model='question.userResult')
+              option(v-for="(userResult, userResultId) in resultList" :key="userResultId") {{userResult}}
+        .button.my-3
+          button.btn.btn-outline-danger(@click='init') 重玩
+        p {{warn}}
+        p 總共有 {{all.length}} 種可能（顯示前 100 種）
+        .prediction
+          button.btn.btn-outline-success.btn-sm.mt-1.mr-1( v-for="(n, index) in getAll.slice(0, 100)" :key='index' @click='selectAns(index)') {{getAll[index]}}
+
+block script
+  script.
+    const resultAll = {
+      '0A0B': 0,
+      '0A1B': 1,
+      '0A2B': 2,
+      '0A3B': 3,
+      '0A4B': 4,
+      '1A0B': 10,
+      '1A1B': 11,
+      '1A2B': 12,
+      '1A3B': 13,
+      '2A0B': 20,
+      '2A1B': 21,
+      '2A2B': 22,
+      '3A0B': 30,
+      '3A1B': 31,
+      '4A0B': 40,
+    }
+
+    const vm = new Vue({
+      el: '#app',
+      data:{
+        warn: '',
+        all: [],
+        result: 0, // 篩選的 result
+        resultList: _.invert(resultAll),
+        questions: []
+      },
+      mounted () {
+        this.init()
+      },
+      computed: {
+        getAll () {
+          this.all = []
+          this.warn = ""
+          const allQuestion = _.filter(this.questions, q => {
+            if (/^\d{4}$/.test(q.userAns) && _.uniq(q.userAns).length === 4) return q
+          })
+          if (allQuestion.length === 0) {
+            this.warn = '請至少填寫一欄答案（四位不重複數字）'
+            return this.all = []
+          }
+          for (let n1 = 0 ; n1 < 10 ; n1++) {
+            for (let n2 = 0 ; n2 < 10 ; n2++) {
+              if (n1 === n2) continue
+              for (let n3 = 0 ; n3 < 10 ; n3++) {
+                if (n1 === n3 || n2 === n3) continue
+                for (let n4 = 0 ; n4 < 10 ; n4++) {
+                  if (n1 === n4 || n2 === n4 || n3 === n4) continue
+                  
+                  let predictAns = ''.concat(n1, n2, n3, n4)
+                  let predictCorrect
+                  for (let q of allQuestion) {
+                    this.result = 0
+                    predictCorrect = false
+                    for (let number of q.userAns) {
+                      if (predictAns.indexOf(number) === q.userAns.indexOf(number)) {
+                        this.result += 10
+                        continue
+                      }
+                      if (predictAns.includes(number)) this.result++
+                    }
+                    if (this.result === resultAll[q.userResult]) { predictCorrect = true }
+                    if (!predictCorrect) break
+                  }
+                  if (predictCorrect) this.all.push(predictAns) // 不重複的刪除
+                }
+              }
+            }
+          }
+          return this.all = _.uniq(this.all) // 重複的只留一個
+        }
+      },
+      methods: {
+        init () {
+          this.all = []
+          this.warn = ""
+          this.questions = _.times(8, () => {
+            return {userAns: '', userResult: '0A0B' }
+          })
+        },
+        selectAns (i) {
+          let autoInput = false
+          for (let qId in this.questions) {
+            if (!/^\d{4}$/.test(this.questions[qId].userAns)) {
+              this.questions[qId].userAns = this.all[i]
+              autoInput = ture
+            }
+            if (autoInput) return
+            continue
+          }
+        },
+      }
+    })
