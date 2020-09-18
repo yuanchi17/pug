@@ -10,7 +10,8 @@ block style
         display: none
       #app
         .card
-          width: 500px
+          max-width: 500px
+          width: 80vw
 
 block content
   #app.content.p-3.d-flex.flex-column.align-items-center(v-cloak)
@@ -87,15 +88,16 @@ block script
                     predictCorrect = false
                     for (let number of q.userAns) {
                       if (predictAns.indexOf(number) === q.userAns.indexOf(number)) {
-                        this.result += 10
+                        this.result += 10 // A
                         continue
                       }
-                      if (predictAns.includes(number)) this.result++
+                      if (predictAns.includes(number)) this.result++ // B
                     }
-                    if (this.result === resultAll[q.userResult]) { predictCorrect = true }
+                    // 判斷對應到的數字是否與設定的 AB 相同
+                    if (this.result === resultAll[q.userResult]) predictCorrect = true
                     if (!predictCorrect) break
                   }
-                  if (predictCorrect) this.all.push(predictAns) // 不重複的刪除
+                  if (predictCorrect) this.all.push(predictAns)
                 }
               }
             }
@@ -107,9 +109,7 @@ block script
         init () {
           this.all = []
           this.warn = ""
-          this.questions = _.times(8, () => {
-            return {userAns: '', userResult: '0A0B' }
-          })
+          this.questions = _.times(8, () => { return {userAns: '', userResult: '0A0B' } })
         },
         selectAns (i) {
           let autoInput = false
