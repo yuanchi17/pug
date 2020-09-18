@@ -1,23 +1,30 @@
-.nav.navbar.navbar-expand-md.navbar-light
+.navbar.navbar-expand-md.navbar-light
   a.navbar-brand(href="/") YUAN
   button.navbar-toggler(type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation")
     span.navbar-toggler-icon
   .collapse.navbar-collapse#navbarNav
-    ul.nav.mr-auto.mt-2.mt-md-0
+    ul.navbar-nav.justify-content-end.mr-auto
       li.nav-item
-        a.nav-link.p-0.pr-3.active(href="/") Home
+        a.nav-link.active(href="/") Home
       li.nav-item
-        a.nav-link.p-0.pr-3(href="/works.html") 作品集
+        a.nav-link(href="/works.html") 作品集
       li.nav-item.dropdown
-        a.nav-link.p-0.pr-3.dropdown-toggle(data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false") 社交網站
-        .dropdown-menu
-          a.dropdown-item(href="mailto:joyceleeya@gmail.com" target="view_window") Email
-          a.dropdown-item(href="https://www.youtube.com/channel/UC0Wem7bts97LKT-2mb3c4Kg" target="view_window") YouTube
+        a.nav-link.dropdown-toggle(data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false") 社交網站
+        .dropdown-menu.dropdown-menu-right
+          a.dropdown-item(href="mailto:joyceleeya@gmail.com" target="view_window")
+            i.fa.fa-envelope-o.mr-2
+            span Email
+          a.dropdown-item(href="https://www.youtube.com/channel/UC0Wem7bts97LKT-2mb3c4Kg" target="view_window")
+            i.fa.fa-youtube-play.mr-2
+            span YouTube
 
 style
   :sass
     .nav.navbar
       border-bottom: solid 1px rgb(230, 230, 230)
+      width: 100%
     a
       color: #333333
       font-weight: 500
+    ul
+      width: 100%

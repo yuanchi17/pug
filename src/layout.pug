@@ -8,8 +8,13 @@ html
     title= title
     link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css")
     link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/font-awesome@4/css/font-awesome.min.css")
-    block style
+
   body
+    block style
+    style
+      :sass
+        *
+          font-family: "'Source Sans Pro', Helvetica, Arial, 'PingFang TC', 'Microsoft JhengHei', '微軟正黑體', sans-serif"
     block content
     script(src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js")
     script(src="https://cdn.jsdelivr.net/npm/lodash@4/lodash.min.js")
