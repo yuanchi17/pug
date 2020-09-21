@@ -21,18 +21,18 @@ async function main () {
   const baseUrl = getenv('BASEURL', 'https://lyccccc17.github.io/pug/')
 
   const livereloadServer = livereload.createServer({
-    delay: 1000,
-    port: 3000,
-    server: http.createServer(async (req, res) => {
-      // Serve up <publicDir> folder
-      serveStatic(publicDir, {
-        index: ['index.html', 'index.htm'],
-      })(req, res, finalhandler(req, res))
-    }),
+    delay: 500,
   })
   livereloadServer.watch(publicDir)
 
-  console.log('watch')
+  const staticServer = http.createServer(async (req, res) => {
+    // Serve up <publicDir> folder
+    serveStatic(publicDir, {
+      index: ['index.html', 'index.htm'],
+    })(req, res, finalhandler(req, res))
+  })
+  staticServer.listen(3000)
+
   watch(['./src', './public'], { recursive: true }, async (evt, name) => {
     const match = name.match(/^src[\\/](.+)\.pug$/)
     await build()
