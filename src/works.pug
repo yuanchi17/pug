@@ -39,7 +39,9 @@ block style
 block content
   include /navbar
   #app.content.container.p-3(v-cloak)
-    h1 作品集
+    .d-flex.align-items-center.mb-3
+      img.mr-3(src="https://i.imgur.com/FU5VL1T.png")
+      h1.m-0 作品集
     .works.row
       section.col-md-4.col-sm-12.mb-3(v-for="(work, wId) in works" :key="wId")
         .card.d-flex.justify-content-center

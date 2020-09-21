@@ -5,17 +5,23 @@
   .collapse.navbar-collapse#navbarNav
     ul.navbar-nav.justify-content-end.mr-auto
       li.nav-item
-        a.nav-link.active(href="./") Home
+        a.nav-link.d-flex.align-items-center.mx-2(href="./")
+          img(src="https://i.imgur.com/mGeUVLU.png")
+          span.span-en.px-0.pl-2 Home
       li.nav-item
-        a.nav-link(href="./works.html") 作品集
+        a.nav-link.d-flex.align-items-center.mx-2(href="./works.html")
+          img(src="https://i.imgur.com/inxUwKm.png")
+          span.px-0.pl-2 作品集
       li.nav-item.dropdown
-        a.nav-link.dropdown-toggle(data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false") 社交網站
+        a.nav-link.d-flex.align-items-center.mx-2.dropdown-toggle(data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false")
+          img(src="https://i.imgur.com/U3XZLD0.png")
+          span.px-0.pl-2 社交網站
         .dropdown-menu.dropdown-menu-right
           a.dropdown-item(href="mailto:joyceleeya@gmail.com" target="view_window")
-            i.fa.fa-envelope-o.mr-2
+            img.pb-1.mr-2(src="https://i.imgur.com/aXxu2fD.png")
             span Email
           a.dropdown-item(href="https://www.youtube.com/channel/UC0Wem7bts97LKT-2mb3c4Kg" target="view_window")
-            i.fa.fa-youtube-play.mr-2
+            img.pb-1.mr-2(src="https://i.imgur.com/ixziQcD.png")
             span YouTube
 
 style
@@ -23,8 +29,10 @@ style
     .navbar
       border-bottom: solid 1px rgb(230, 230, 230)
       width: 100%
-    a
+    a, span
       color: #333333
+      font-weight: bold
+    .span-en
       font-weight: 500
     ul
       width: 100%
