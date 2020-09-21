@@ -17,13 +17,13 @@ async function main () {
   log('build finsh')
 
   const publicDir = path.resolve(__dirname, 'dist') // C:\Users\Joyce\Desktop\Yuan\pug\dist
-  console.log(path.resolve(__dirname, 'dist'))
   const baseUrl = getenv('BASEURL', 'https://lyccccc17.github.io/pug/')
 
   const livereloadServer = livereload.createServer({
     delay: 500,
   })
   livereloadServer.watch(publicDir)
+  log('livereloadServer Done')
 
   const staticServer = http.createServer(async (req, res) => {
     // Serve up <publicDir> folder
@@ -32,6 +32,8 @@ async function main () {
     })(req, res, finalhandler(req, res))
   })
   staticServer.listen(3000)
+  log('staticServer Done')
+  log('進入首頁', baseUrl)
 
   watch(['./src', './public'], { recursive: true }, async (evt, name) => {
     const match = name.match(/^src[\\/](.+)\.pug$/)
