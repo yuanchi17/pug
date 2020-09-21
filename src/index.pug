@@ -1,6 +1,24 @@
 extends layout
 
+block beforehtml
+  - const title = "YUAN"
+
+block style
+  style
+    :sass
+      #app
+        img
+          width: 250px
+          height: 250px
+          object-fit: cover
+          border-radius: 50%
+
 block content
   include /navbar
-  h1= title
-  p Welcome to Yuan's pug pages
+  #app.content.container
+    .row
+      .col-md-4.col-sm-12.d-flex.flex-column.justify-content-center
+        img.mx-auto.mt-5.mb-3.d-block(src="https://i.imgur.com/f4j0B1I.jpg", alt="個人照片")
+        h1.text-center YUAN
+      .col-md-8.col-sm-12.d-flex.flex-column.justify-content-center
+        h4.text-center 嗨~
