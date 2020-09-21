@@ -1,4 +1,4 @@
-.navbar.navbar-expand-md.navbar-light
+.navbar.navbar-expand-md.navbar-light.fixed-top
   a.navbar-brand(href="./") YUAN
   button.navbar-toggler(type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation")
     span.navbar-toggler-icon
@@ -19,16 +19,17 @@
         .dropdown-menu.dropdown-menu-right
           a.dropdown-item(href="mailto:joyceleeya@gmail.com" target="view_window")
             img.pb-1.mr-2(src="https://i.imgur.com/aXxu2fD.png")
-            span Email
+            span.span-en Email
           a.dropdown-item(href="https://www.youtube.com/channel/UC0Wem7bts97LKT-2mb3c4Kg" target="view_window")
             img.pb-1.mr-2(src="https://i.imgur.com/ixziQcD.png")
-            span YouTube
+            span.span-en YouTube
 
 style
   :sass
     .navbar
       border-bottom: solid 1px rgb(230, 230, 230)
       width: 100%
+      background-color: #ffffff
     a, span
       color: #333333
       font-weight: bold
