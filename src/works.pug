@@ -9,6 +9,8 @@ block style
       [v-cloak]
         display: none
 
+      #loading
+        width: 99vw
       #app
         h1, h5, a
           font-weight: bold
@@ -42,30 +44,57 @@ block content
     .d-flex.align-items-center.mb-3
       img.mr-3(src="https://i.imgur.com/FU5VL1T.png")
       h1.m-0 作品集
-    .works.row
-      section.col-md-4.col-sm-12.mb-3(v-for="(work, wId) in works" :key="wId")
-        .card.d-flex.justify-content-center
-          img.card-img-top(:src="`https://i.imgur.com/${work.image}.png`" alt="")
-          .detail.align-self-center.d-flex.flex-column.align-items-center
-            h5.mx-4.mb-3 {{ work.text }}
-            a.btn.btn-primary(:href="work.url" target="_blank") {{ work.button }}
-          .card-footer
-            h5.text-center.m-0 {{ work.title }}
+    template(v-if="this.loading")
+      #loading.d-flex.flex-column.align-items-center
+        .spinner-border.text-primary(role="status")
+          span.sr-only Loading...
+        h5.mt-3 載入中…
+    template(v-else)
+      #works.works.row
+        section.col-md-4.col-sm-12.mb-3(v-for="(work, wId) in this.works" :key="wId")
+          .card.d-flex.justify-content-center
+            img.card-img-top(:src="`https://i.imgur.com/${work.image}.png`" alt="")
+            .detail.align-self-center.d-flex.flex-column.align-items-center
+              h5.mx-4.mb-3 {{ work.text }}
+              a.btn.btn-primary(:href="work.url" target="_blank") {{ work.button }}
+            .card-footer
+              h5.text-center.m-0 {{ work.title }}
 
 block script
   script.
     const vm = new Vue({
       el: '#app',
       data: {
-        works: [
+        loading: true,
+        works: [],
+        worksDefault: [
           {title: '猜數字遊戲', image: 'uWxlelx', url: './bulls-and-cows.html', text: '1A2B 解題工具', button: '我要玩'},
           {title: '17 來玩板', image: 'C29rqFO', url: 'https://line.me/R/ti/p/@117idlhz', text: '用 LINE Chatbot 做一個簡易的滑板介紹及查詢', button: '加入 chatbot'},
         ]
       },
-      mounted () {
+      async mounted () {
+        await this.init()
       },
       computed: {
       },
       methods: {
+        async getCsv (url) {
+          const csv = _.trim(_.get(await axios.get(url), 'data')) // _.trim：把前後多餘的空格修掉
+          return _.get(Papa.parse(csv, {
+            encoding: 'utf8',
+            header: true,
+          }), 'data', [])
+        },
+        async init () {
+          try {
+            this.works = await this.getCsv('https://cors-anywhere.herokuapp.com/https://docs.google.com/spreadsheets/d/e/2PACX-1vRA9QJDFGAuHqHe6hNfjTMLDfYvEbPmOH17743KVG6L1KCV92J9mEmXoLvF8Xu-CAf-HeB1NrM87Sf2/pub?gid=0&single=true&output=csv')
+            this.loading = false
+          } catch (err) {
+            console.log(err)
+            this.works = this.worksDefault
+            this.loading = false
+            throw err
+          }
+        }
       }
     })
