@@ -6,19 +6,104 @@ block beforehtml
 block style
   style
     :sass
+      $color_blue: #78D0FF
+      $font_size_small: 14px
+
+      @mixin size($w, $h)
+        width: $w
+        height: $h
+      @keyframes open
+        0%
+          +size(20px, 250px)
+        10%
+          +size(20px, 250px)
+        100%
+          +size(400px, 250px)
+
+      body
+        height: calc(100vh - 55px)
       #app
+        height: 100%
         img
           width: 250px
           height: 250px
           object-fit: cover
           border-radius: 50%
+        .row
+          height: 100%
+      #vcard
+        p, span, a
+          color: rgba(white, 0.7)
+          font-size: $font_size_small
+          font-weight: 400
+        .name
+          color: $color_blue
+          font-weight: 400
+        .card
+          +size(400px, 250px)
+          animation: open 2s both
+          background-color: #333
+          border-radius: 6px
+          border: none
+          box-shadow: 0px 0px 5px 3px rgba(black, 0.3)
+          overflow: hidden
+          transition: 1s
+          z-index: 1
+          & .tri
+            +size(150px, 200px)
+            background-color: darken($color_blue, 5)
+            position: absolute
+            &.tri1
+              bottom: 0px
+              transform: rotate(-18deg) translate(-85%, -5%)
+            &.tri2
+              right: 8px
+              top: 0px
+              transform: rotate(-18deg) translate(85%, 5%)
+
+        .vcard-bottom
+          transition: 1s 0.5s
+          & .bottom-texts
+            .vcard-title
+              color: rgba($color_blue, 0.5)
+              font-weight: bold
+            .vcard-body
+              border-top: solid 1px
+              line-height: 20px
+          a
+            bottom: 0px
+            right: 0px
+            color: rgba($color_blue, 0.5)
+            font-size: $font_size_small
+            position: absolute
+        .vcard-top
+          & .top-texts
+            h1
+              font-size: 50px
 
 block content
   include /navbar
   #app.content.container
-    .row
+    .row.d-flex.align-items-center
       .col-md-4.col-sm-12.d-flex.flex-column.justify-content-center
-        img.mx-auto.mt-5.mb-3.d-block(src="https://i.imgur.com/f4j0B1I.jpg", alt="個人照片")
+        img.mx-auto.mb-3(src="https://i.imgur.com/f4j0B1I.jpg", alt="個人照片")
         h1.text-center YUAN
-      .col-md-8.col-sm-12.d-flex.flex-column.justify-content-center
-        h4.text-center 嗨~
+      #vcard.col-md-8.col-sm-12
+        .card.vcard-top.mx-auto.d-flex.flex-column.justify-content-center
+          .top-texts.text-center
+            h1.name.m-0 L Y C
+            p.pt-2.m-0 Yuan-Chi Lee
+            a.pt-2.m-0(href="mailto:joyceleeya@gmail.com" target="_blank") joyceleeya@gmail.com
+          .tri.tri1
+          .tri.tri2
+        div <br>
+        .card.vcard-bottom.mx-auto
+          .bottom-texts.p-5
+            h2.name.m-0.px-1 Yuan-Chi Lee
+            p.vcard-title.m-0.p-1.pb-2 微程式資訊股份有限公司 副工程師
+            p.vcard-body.m-0.px-1.pt-2 畢業於 逢甲大學應用數學系，學過 Python，因興趣開始自學網頁設計程式，希望能讓更多人看到自己的作品！
+          a.mb-2.mr-3(href="./works.html", target="_blank", style="text-decoration: none")
+            i.fa.fa-hand-o-right
+            span.pl-1 作品集
+          .tri.tri1
+          .tri.tri2
