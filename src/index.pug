@@ -7,6 +7,7 @@ block style
   style
     :sass
       $color_blue: #78D0FF
+      $color_white: #ffffff
       $font_size_small: 14px
 
       @mixin size($w, $h)
@@ -20,8 +21,6 @@ block style
         100%
           +size(400px, 250px)
 
-      body
-        height: calc(100vh - 55px)
       #app
         height: 100%
         img
@@ -31,6 +30,39 @@ block style
           border-radius: 50%
         .row
           height: 100%
+      
+      section#home
+        height: calc(100vh - 55px)
+        background-color: $color_blue
+        h1
+          color: $color_white
+          &:after
+            border-top: solid
+            content: " "
+            display: block
+            left: calc(50vw + 55px)
+            position: absolute
+            top: calc(50vh + 24px)
+            width: 80px
+          &:before
+            border-top: solid
+            content: " "
+            display: block
+            position: absolute
+            right: calc(50vw + 55px)
+            top: calc(50vh + 24px)
+            width: 80px
+        .double-down
+          bottom: 0px
+          color: $color_white
+          font-size: 23px
+          position: absolute
+          hr
+            transform: rotate(90deg)
+            border-top: solid 1px $color_white
+
+      section#home-vcard
+
       #vcard
         p, span, a
           color: rgba(white, 0.7)
@@ -83,27 +115,33 @@ block style
 
 block content
   include /navbar
-  #app.content.container
-    .row.d-flex.align-items-center
-      .col-md-4.col-sm-12.d-flex.flex-column.justify-content-center
-        img.mx-auto.mb-3(src="https://i.imgur.com/f4j0B1I.jpg", alt="個人照片")
-        h1.text-center YUAN
-      #vcard.col-md-8.col-sm-12
-        .card.vcard-top.mx-auto.d-flex.flex-column.justify-content-center
-          .top-texts.text-center
-            h1.name.m-0 L Y C
-            p.pt-2.m-0 Yuan-Chi Lee
-            a.pt-2.m-0(href="mailto:joyceleeya@gmail.com" target="_blank") joyceleeya@gmail.com
-          .tri.tri1
-          .tri.tri2
-        div <br>
-        .card.vcard-bottom.mx-auto
-          .bottom-texts.p-5
-            h2.name.m-0.px-1 Yuan-Chi Lee
-            p.vcard-title.m-0.p-1.pb-2 微程式資訊股份有限公司 副工程師
-            p.vcard-body.m-0.px-1.pt-2 畢業於 逢甲大學應用數學系，學過 Python，因興趣開始自學網頁設計程式，希望能讓更多人看到自己的作品！
-          a.mb-2.mr-3(href="./works.html", target="_blank", style="text-decoration: none")
-            i.fa.fa-hand-o-right
-            span.pl-1 作品集
-          .tri.tri1
-          .tri.tri2
+  #app.content
+    section#home.d-flex.align-items-center.justify-content-center
+      h1.text-center YUAN
+      a.double-down(href="#home-vcard")
+        p.pb-3 more
+        hr
+    section#home-vcard.container.py-3
+      .row.d-flex.align-items-center
+        .col-md-4.col-sm-12.d-flex.flex-column.justify-content-center
+          img.mx-auto.mb-3(src="https://i.imgur.com/f4j0B1I.jpg", alt="個人照片")
+          h1.text-center YUAN
+        #vcard.col-md-8.col-sm-12
+          .card.vcard-top.mx-auto.d-flex.flex-column.justify-content-center
+            .top-texts.text-center
+              h1.name.m-0 L Y C
+              p.pt-2.m-0 Yuan-Chi Lee
+              a.pt-2.m-0(href="mailto:joyceleeya@gmail.com" target="_blank") joyceleeya@gmail.com
+            .tri.tri1
+            .tri.tri2
+          div <br>
+          .card.vcard-bottom.mx-auto
+            .bottom-texts.p-5
+              h2.name.m-0.px-1 Yuan-Chi Lee
+              p.vcard-title.m-0.p-1.pb-2 微程式資訊股份有限公司 副工程師
+              p.vcard-body.m-0.px-1.pt-2 畢業於 逢甲大學應用數學系，學過 Python，因興趣開始自學網頁設計程式，希望能讓更多人看到自己的作品！
+            a.mb-2.mr-3(href="./works.html", target="_blank", style="text-decoration: none")
+              i.fa.fa-hand-o-right
+              span.pl-1 作品集
+            .tri.tri1
+            .tri.tri2
