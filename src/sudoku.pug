@@ -14,6 +14,8 @@ block style
         input
           width: 40px
           height: 40px
+        .prediction
+          height: 55px
 
 block content
   include /navbar
@@ -110,6 +112,7 @@ block script
         },
         selectAns (index) {
           this.$set(this.sudoku[this.refAns.xId], this.refAns.yId, this.refAns.ans[index])
+          this.refAns.ans = []
         }
       }
     })
