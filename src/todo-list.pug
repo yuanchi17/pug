@@ -1,0 +1,91 @@
+extends layout
+
+block beforehtml
+  - const title = "代辦事項"
+
+block style
+  style
+    :sass
+      [v-cloak]
+        display: none
+      
+      #todo-list
+        border: solid 1px #333
+        p
+          overflow-wrap: anywhere
+        
+
+block content
+  include /navbar
+  #app.container
+    h3.my-3 代辦事項
+    p 將存放在瀏覽器上，請小心不要誤清除資料
+    form
+      .form-group
+        label(for='duedate') 日期
+        input#duedate.form-control(type='text' v-model='duedate')
+      .form-group
+        label(for='todo') 代辦事項
+        input#todo.form-control(type='text' v-model='todoItem')
+      button.btn.btn-primary.mr-1(type='button' @click='addItem()') +
+      button.btn.btn-primary(type='button' @click='deleteAll()') 清空
+      
+    #todo-list.mx-auto.p-3
+      ol.row.p-0.d-flex.justify-content-start.align-items-center(v-for="(item, index) in todoList" :key="index")
+        //- done 變動還沒做好
+        input.col-md-1.col-sm-1(type='checkbox' value='item.done' @click='done(index)')
+        p.col-md-1.col-sm-12.todo-duedate.m-0 {{item.date}}
+        p.col-md-10.col-sm-12.todo-item.m-0 {{item.todo}}
+        //- button.btn.btn-primary(type='button' @click='edit(index)') 修改
+        //- button.btn.btn-primary(type='button' @click='remove(index)') 刪除
+
+
+block script
+  script.
+    const vm = new Vue({
+      el: '#app',
+      data: {
+        duedate: '加入時間選擇器',
+        todoItem: '代辦事項',
+        todoList: []
+      },
+      async mounted () {
+        await this.init()
+      },
+      computed: {},
+      methods: {
+        init () {
+          this.todoList = (localStorage.getItem('todoList')) ? JSON.parse(localStorage.getItem('todoList')) : []
+        },
+        done (index) {
+          this.todoList[index].done = !this.todoList[index].done
+          localStorage.setItem('todoList', JSON.stringify(this.todoList))
+        },
+        addItem () {
+          // TODO 判斷格式
+          
+          this.todoList.push({
+            date: this.duedate,
+            done: false,
+            todo: this.todoItem
+          })
+          localStorage.setItem('todoList', JSON.stringify(this.todoList))
+        },
+        deleteAll () {
+          Swal.fire({
+            title: '確定要清空代辦事項？',
+            text: "清空後將無法救回",
+            icon: 'warning',
+            showCancelButton: true,
+            cancelButtonColor: '#d33',
+            confirmButtonColor: '#3085d6',
+            confirmButtonText: '確定'
+          }).then( result => {
+            if (result.isConfirmed) {
+              localStorage.removeItem('todoList')
+              this.init()
+            }
+          })
+        }
+      }
+    })
