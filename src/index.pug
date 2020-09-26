@@ -31,8 +31,16 @@ block style
         .row
           height: 100%
       
+      .contact
+        a
+          font-size: 28px
+          color: rgba(gray, 0.7)
+          i:hover
+            color: gray
+
       section#home
         height: calc(100vh - 55px)
+        max-height: 570px
         background-color: $color_blue
         h1
           color: $color_white
@@ -40,30 +48,33 @@ block style
             border-top: solid
             content: " "
             display: block
-            left: calc(50vw + 55px)
+            left: 110px
             position: absolute
-            top: calc(50vh + 24px)
+            top: 24px
             width: 80px
           &:before
             border-top: solid
             content: " "
             display: block
             position: absolute
-            right: calc(50vw + 55px)
-            top: calc(50vh + 24px)
+            right: 110px
+            top: 24px
             width: 80px
-        .double-down
-          bottom: 0px
+        .contact
+          a
+            font-size: 28px
+            color: rgba(gray, 0.7)
+            i:hover
+              color: gray
+        .more
+          font-weight: initial
           color: $color_white
           font-size: 23px
-          position: absolute
           hr
             transform: rotate(90deg)
             border-top: solid 1px $color_white
 
       section#home-vcard
-
-      #vcard
         p, span, a
           color: rgba(white, 0.7)
           font-size: $font_size_small
@@ -80,7 +91,6 @@ block style
           box-shadow: 0px 0px 5px 3px rgba(black, 0.3)
           overflow: hidden
           transition: 1s
-          z-index: 1
           & .tri
             +size(150px, 200px)
             background-color: darken($color_blue, 5)
@@ -113,35 +123,54 @@ block style
             h1
               font-size: 50px
 
+      section#home-footer
+        h4
+          color: rgba(gray, 0.7)
+        h4:hover, i:hover
+          color: gray
+
 block content
   include /navbar
   #app.content
-    section#home.d-flex.align-items-center.justify-content-center
-      h1.text-center YUAN
-      a.double-down(href="#home-vcard")
+    section#home.d-flex.flex-column.align-items-center
+      img.mt-5.mb-3(src="https://i.imgur.com/f4j0B1I.jpg", alt="個人照片")
+      h1.m-0.text-center.animate__animated.animate__rotateIn YUAN
+      .contact.animate__animated.animate__fadeIn.animate__delay-1s
+        a.mx-1(href="https://www.youtube.com/channel/UC0Wem7bts97LKT-2mb3c4Kg" target="_blank")
+          i.fa.fa-youtube-square
+        a.mx-1(href="https://github.com/lyccccc17" target="_blank")
+          i.fa.fa-github-square
+        a.mx-1(href="mailto:joyceleeya@gmail.com" target="_blank")
+          i.fa.fa-envelope-square
+      a.more.animate__animated.animate__pulse.animate__infinite.mt-auto(href="#home-vcard" style="text-decoration: none")
         p.pb-3 more
         hr
-    section#home-vcard.container.py-3
-      .row.d-flex.align-items-center
-        .col-md-4.col-sm-12.d-flex.flex-column.justify-content-center
-          img.mx-auto.mb-3(src="https://i.imgur.com/f4j0B1I.jpg", alt="個人照片")
-          h1.text-center YUAN
-        #vcard.col-md-8.col-sm-12
-          .card.vcard-top.mx-auto.d-flex.flex-column.justify-content-center
-            .top-texts.text-center
-              h1.name.m-0 L Y C
-              p.pt-2.m-0 Yuan-Chi Lee
-              a.pt-2.m-0(href="mailto:joyceleeya@gmail.com" target="_blank") joyceleeya@gmail.com
-            .tri.tri1
-            .tri.tri2
-          div <br>
-          .card.vcard-bottom.mx-auto
-            .bottom-texts.p-5
-              h2.name.m-0.px-1 Yuan-Chi Lee
-              p.vcard-title.m-0.p-1.pb-2 微程式資訊股份有限公司 副工程師
-              p.vcard-body.m-0.px-1.pt-2 畢業於 逢甲大學應用數學系，學過 Python，因興趣開始自學網頁設計程式，希望能讓更多人看到自己的作品！
-            a.mb-2.mr-3(href="./works.html", target="_blank", style="text-decoration: none")
-              i.fa.fa-hand-o-right
-              span.pl-1 作品集
-            .tri.tri1
-            .tri.tri2
+    section#home-vcard.py-3.d-flex.flex-column.align-items-center
+      .card.vcard-top.d-flex.flex-column.justify-content-center
+        .top-texts.text-center
+          h1.name.m-0 L Y C
+          p.pt-2.m-0 Yuan-Chi Lee
+          a.pt-2.m-0(href="mailto:joyceleeya@gmail.com" target="_blank") joyceleeya@gmail.com
+        .tri.tri1
+        .tri.tri2
+      div <br>
+      .card.vcard-bottom
+        .bottom-texts.p-5
+          h2.name.m-0.px-1 Yuan-Chi Lee
+          p.vcard-title.m-0.p-1.pb-2 微程式資訊股份有限公司 副工程師
+          p.vcard-body.m-0.px-1.pt-2 畢業於 逢甲大學應用數學系，學過 Python，因興趣開始自學網頁設計程式，希望能讓更多人看到自己的作品！
+        a.mb-2.mr-3(href="./works.html", target="_blank" style="text-decoration: none")
+          i.fa.fa-hand-o-right
+          span.pl-1 作品集
+        .tri.tri1
+        .tri.tri2
+    section#home-footer.d-flex.align-items-center.justify-content-center
+      a(href="#home" style="text-decoration: none")
+        h4.m-0.mr-3.text-center YUAN
+      .contact
+        a.mx-1(href="https://www.youtube.com/channel/UC0Wem7bts97LKT-2mb3c4Kg" target="_blank")
+          i.fa.fa-youtube-square
+        a.mx-1(href="https://github.com/lyccccc17" target="_blank")
+          i.fa.fa-github-square
+        a.mx-1(href="mailto:joyceleeya@gmail.com" target="_blank")
+          i.fa.fa-envelope-square
