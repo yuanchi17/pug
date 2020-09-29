@@ -33,11 +33,12 @@ block content
     #todo-list.mx-auto.p-3
       ol.row.p-0.d-flex.justify-content-start.align-items-center(v-for="(item, index) in todoList" :key="index")
         //- done 變動還沒做好
-        input.col-md-1.col-sm-1(type='checkbox' value='item.done' @click='done(index)')
+        //- input.col-md-1.col-sm-1(type='checkbox' value='item.done' @click='done(index)')
         p.col-md-1.col-sm-12.todo-duedate.m-0 {{item.date}}
-        p.col-md-10.col-sm-12.todo-item.m-0 {{item.todo}}
-        //- button.btn.btn-primary(type='button' @click='edit(index)') 修改
-        //- button.btn.btn-primary(type='button' @click='remove(index)') 刪除
+        p.col-md-7.col-sm-12.todo-item.m-0 {{item.todo}}
+        button.btn.btn-success(type='button' @click='done(index)') 完成
+        button.btn.btn-primary(type='button' @click='edit(index)') 修改
+        button.btn.btn-secondary(type='button' @click='remove(index)') 刪除
 
 
 block script
@@ -54,6 +55,12 @@ block script
       },
       computed: {},
       methods: {
+        alert (icon, title) {
+          Swal.fire({
+            title,
+            icon,
+          })
+        },
         init () {
           this.todoList = (localStorage.getItem('todoList')) ? JSON.parse(localStorage.getItem('todoList')) : []
         },
@@ -62,14 +69,21 @@ block script
           localStorage.setItem('todoList', JSON.stringify(this.todoList))
         },
         addItem () {
-          // TODO 判斷格式
-          
+          if (!/^\d{2}-\d{2}$/.test(this.duedate)) {
+            return this.alert('warning', '日期格式輸入錯誤')
+          }
+          if (_.trim(this.todoItem) === "") {
+            return this.alert('warning', '請輸入代辦事項')
+          }
           this.todoList.push({
             date: this.duedate,
             done: false,
             todo: this.todoItem
           })
           localStorage.setItem('todoList', JSON.stringify(this.todoList))
+        },
+        remove (index) {
+          this.todoList.splice
         },
         deleteAll () {
           Swal.fire({
