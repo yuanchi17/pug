@@ -1,0 +1,13 @@
+if GA_MEASUREMENT_ID
+  script(src=`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`)
+  script.
+    console.log('GA_MEASUREMENT_ID')
+    window.dataLayer = window.dataLayer || []
+    window.GA_MEASUREMENT_ID = '#{GA_MEASUREMENT_ID}'
+    function gtag () { window.dataLayer.push(arguments) }
+    gtag('js', new Date())
+
+    gtag('config', 'UA-164526128-1')
+else
+  script.
+    console.log('not GA_MEASUREMENT_ID')
