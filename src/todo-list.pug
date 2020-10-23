@@ -1,52 +1,57 @@
 extends layout
 
 block beforehtml
-  - const title = "代辦事項"
+  - const title = '代辦事項'
 
 block style
   style
     :sass
       [v-cloak]
         display: none
-      
-      #todo-list
-        border: solid 1px #333
-        p
-          overflow-wrap: anywhere
-        
 
 block content
   include /navbar
-  #app.container
-    h3.my-3 代辦事項
+  #app.container.pt-3
+    h3.m-0 代辦事項
     p 將存放在瀏覽器上，請小心不要誤清除資料
     form
-      .form-group
-        label(for='duedate') 日期
-        input#duedate.form-control(type='text' v-model='duedate')
-      .form-group
-        label(for='todo') 代辦事項
-        input#todo.form-control(type='text' v-model='todoItem')
-      button.btn.btn-primary.mr-1(type='button' @click='addItem()') +
-      button.btn.btn-primary(type='button' @click='deleteAll()') 清空
+      .form-row
+        .form-group.col-md-6
+          label(for='duedate') 日期
+          vue-ctk-date-time-picker(label='截止日期' v-model='duedate' format='YYYY-MM-DD' formatted='ll' noHeader autoClose onlyDate)
+        .form-group.col-md-6
+          label(for='todo') 代辦事項
+          input#todo.form-control(type='text' v-model='todoItem')
+      button.btn.btn-outline-primary.btn-sm.btn-block(type='button' @click='addItem()') 新增
       
-    #todo-list.mx-auto.p-3
-      ol.row.p-0.d-flex.justify-content-start.align-items-center(v-for="(item, index) in todoList" :key="index")
-        //- done 變動還沒做好
-        //- input.col-md-1.col-sm-1(type='checkbox' value='item.done' @click='done(index)')
-        p.col-md-1.col-sm-12.todo-duedate.m-0 {{item.date}}
-        p.col-md-7.col-sm-12.todo-item.m-0 {{item.todo}}
-        button.btn.btn-success(type='button' @click='done(index)') 完成
-        button.btn.btn-primary(type='button' @click='edit(index)') 修改
-        button.btn.btn-secondary(type='button' @click='remove(index)') 刪除
-
+    #todo-list.card.mt-3
+      .card-body
+        h5.m-0.card-title 代辦清單
+      ul.list-group.list-group-flush
+        li.list-group-item.d-flex.justify-content-between(v-for='(item, index) in todoList' :key='index')
+          p.m-0.my-auto {{item.date}} | {{item.todo}}
+          .button-group
+            button.btn.btn-outline-primary.btn-sm.mx-1(type='button' @click='done(index)') V
+            button.btn.btn-outline-danger.btn-sm(type='button' @click='remove(index)') X
+      .card-body.d-flex(v-if='todoList.length !== 0')
+        button.btn.btn-outline-danger.btn-sm.ml-auto(type='button' @click='delTodoAll()') 清空
+    #done-list.card.mt-3
+      .card-body
+        h5.m-0.card-title 已完成
+      ul.list-group.list-group-flush
+        li.list-group-item.d-flex.justify-content-between(v-for='(item, index) in doneList' :key='index')
+          p.m-0.my-auto {{item.date}} | {{item.todo}}
+      .card-body.d-flex(v-if='doneList.length !== 0')
+        button.btn.btn-outline-danger.btn-sm.ml-auto(type='button' @click='delDoneAll()') 清空
 
 block script
   script.
+    Vue.component('vue-ctk-date-time-picker', window['vue-ctk-date-time-picker'])
     const vm = new Vue({
       el: '#app',
       data: {
-        duedate: '加入時間選擇器',
+        doneList: [],
+        duedate: '',
         todoItem: '代辦事項',
         todoList: []
       },
@@ -63,43 +68,59 @@ block script
         },
         init () {
           this.todoList = (localStorage.getItem('todoList')) ? JSON.parse(localStorage.getItem('todoList')) : []
+          this.doneList = (localStorage.getItem('doneList')) ? JSON.parse(localStorage.getItem('doneList')) : []
         },
         done (index) {
-          this.todoList[index].done = !this.todoList[index].done
-          localStorage.setItem('todoList', JSON.stringify(this.todoList))
+          this.doneList.push(this.todoList[index])
+          this.remove(index)
+          localStorage.setItem('doneList', JSON.stringify(this.doneList))
         },
         addItem () {
-          if (!/^\d{2}-\d{2}$/.test(this.duedate)) {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(this.duedate)) {
             return this.alert('warning', '日期格式輸入錯誤')
           }
-          if (_.trim(this.todoItem) === "") {
+          if (_.trim(this.todoItem) === '') {
             return this.alert('warning', '請輸入代辦事項')
           }
           this.todoList.push({
             date: this.duedate,
-            done: false,
             todo: this.todoItem
           })
           localStorage.setItem('todoList', JSON.stringify(this.todoList))
         },
         remove (index) {
-          this.todoList.splice
+          this.todoList.splice(index, 1)
+          localStorage.setItem('todoList', JSON.stringify(this.todoList))
         },
-        deleteAll () {
-          Swal.fire({
-            title: '確定要清空代辦事項？',
-            text: "清空後將無法救回",
+        async delTodoAll () {
+          const confirm = await Swal.fire({
+            title: '確定要清空所有代辦事項？',
+            text: '清空後將無法救回',
             icon: 'warning',
-            showCancelButton: true,
-            cancelButtonColor: '#d33',
+            cancelButtonText: '取消',
             confirmButtonColor: '#3085d6',
-            confirmButtonText: '確定'
-          }).then( result => {
-            if (result.isConfirmed) {
-              localStorage.removeItem('todoList')
-              this.init()
-            }
+            confirmButtonText: '確定',
+            reverseButtons: true,
+            showCancelButton: true,
           })
+          if (!confirm.value) return
+          localStorage.removeItem('todoList')
+          this.init()
+        },
+        async delDoneAll () {
+          const confirm = await Swal.fire({
+            title: '確定要清空所有完成事項？',
+            text: '清空後將無法救回',
+            icon: 'warning',
+            cancelButtonText: '取消',
+            confirmButtonColor: '#3085d6',
+            confirmButtonText: '確定',
+            reverseButtons: true,
+            showCancelButton: true,
+          })
+          if (!confirm.value) return
+          localStorage.removeItem('doneList')
+          this.init()
         }
       }
     })
