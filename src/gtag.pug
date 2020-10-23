@@ -2,13 +2,14 @@ if GA_MEASUREMENT_ID
   script(src=`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`)
   script.
     const host = location.host.split(':')[0]
-    if (host === 'localhost') return
-    window.dataLayer = window.dataLayer || []
-    window.GA_MEASUREMENT_ID = '#{GA_MEASUREMENT_ID}'
-    function gtag () { window.dataLayer.push(arguments) }
-    gtag('js', new Date())
+    if (host !== 'localhost') {
+      window.dataLayer = window.dataLayer || []
+      window.GA_MEASUREMENT_ID = '#{GA_MEASUREMENT_ID}'
+      function gtag () { window.dataLayer.push(arguments) }
+      gtag('js', new Date())
 
-    gtag('config', 'UA-164526128-1')
+      gtag('config', 'UA-164526128-1')
+    }
 else
   script.
     console.log('not GA_MEASUREMENT_ID')
