@@ -1,0 +1,177 @@
+extends layout
+
+block beforehtml
+  - const title = '排球記分板'
+
+block style
+  style
+    :sass
+      [v-cloak]
+        display: none
+
+      #app
+        .score_line
+          position: relative
+          height: 30px
+
+          .line_win
+            width: 1px
+            height: 30px
+            border: solid 1px red
+            position: relative
+            left: 50%
+            transform:  translateX(-50%)
+            z-index: 1
+
+          .progress
+            top: -30px
+            position: relative
+            height: 30px
+
+block content
+  include /navbar
+  #app.container.pt-3(v-cloak)
+    h3.text-center A 隊　VS　B 隊 
+    h3.text-center {{ teamA.win }}：{{ teamB.win }}
+    .score_line.mb-3
+      .line_win
+      .progress
+        .progress-bar.progress-bar-striped.progress-bar-animated(role="progressbar" :style="scoreLineA") {{ teamA.score }}
+        .progress-bar.progress-bar-striped.progress-bar-animated.bg-warning.ml-auto(role="progressbar" :style="scoreLineB") {{ teamB.score }}
+    .button-group.d-flex.justify-content-around(v-if="!gameOver")
+      .button-group.teamA
+        button.btn.btn-primary.mr-1(@click="teamA.score += 1") 得分
+        button.btn.btn-secondary(@click="teamA.score -= 1" v-if="teamA.score > 0") 扣分
+      .button-group
+        button.mr-1.btn.btn-outline-danger(
+          v-if="teamA.score === 0 && teamA.score === 0" 
+          @click="gameScore -= 1") 減少比分（{{this.gameScore}}）
+        button.btn.btn-outline-danger(@click="init()") 重新計分
+      .button-group.teamB
+        button.btn.btn-warning.mr-1(@click="teamB.score += 1") 得分
+        button.btn.btn-secondary(@click="teamB.score -= 1" v-if="teamB.score > 0") 扣分
+    .button-group.d-flex.justify-content-around(v-else)
+      button.btn.btn-outline-primary(@click="init()") 再比一局
+      button.btn.btn-outline-danger(@click="nextTeam()") 下一隊
+    
+    .row(v-if="!gameOver")
+      .col-6
+        .card.mt-3
+          .card-body
+            h5.card-title.text-center A 隊
+            .card-subtitle.mb-2.text-muted 
+            button.btn.btn-primary.btn-block(
+              @click="addScore(type)"
+              v-for="(a, type) in attacks" :key="type") {{ a.name }}
+            button.btn.btn-secondary.btn-block(
+              @click="lossScore('teamA', type)"
+              v-for="(m, type) in violation" :key="type") {{ m.name }}
+      .col-6
+        .card.mt-3
+          .card-body
+            h5.card-title.text-center B 隊
+            .card-subtitle.mb-2.text-muted
+            button.btn.btn-secondary.btn-block(
+              @click="lossScore('teamB', type)"
+              v-for="(m, type) in violation" :key="type") {{ m.name }}
+    .row.mt-3
+      .col
+        table.table.table-bordered
+          thead
+            tr
+              th(scope="col") 得分
+              th(scope="col") A隊
+          tbody
+            tr(v-for="(a, type) in attacks" :key="type")
+              th(scopr="row") {{ a.name }}
+              th(scopr="row") {{ a.score }}
+    .row.mt-3
+      .col
+        table.table.table-bordered
+          thead
+            tr
+              th(scope="col") 失誤
+              th(scope="col") A隊
+              th(scope="col") B隊
+          tbody
+            tr(v-for="(m, type) in violation" :key="type")
+              th(scopr="row") {{ m.name }}
+              td {{ m.teamA }}
+              td {{ m.teamB }}
+
+block script
+  script.
+    const vm = new Vue ({
+      el: "#app",
+      data: {
+        gameScore: 25, // 真正比賽分數
+        gameScoreInit: 25, // 比賽分數初始值
+        teamA: {
+          win: 0,
+          score: 0
+        },
+        teamB: {
+          win: 0,
+          score: 0
+        },
+        attacks: {
+          serve: { name: '發球', score: 0 },
+          attack: { name: '扣球', score: 0 },
+          small: { name: '吊球', score: 0 },
+        },
+        violation: { // 違規
+          serve: { name: '發球', teamA: 0, teamB: 0 },
+          touchOut: { name: '接噴', teamA: 0, teamB: 0 },
+          other: { name: '其他', teamA: 0, teamB: 0 }
+        }
+      },
+      mounted () {
+      },
+      computed: {
+        scoreLineA () {
+          return this.getLineWidth(this.teamA.score)
+        },
+        scoreLineB () {
+          return this.getLineWidth(this.teamB.score)
+        },
+        gameOver () {
+          const over = (this.teamA.score === this.gameScore || this.teamB.score === this.gameScore)
+          const duce = (Math.abs(this.teamA.score - this.teamB.score) === 1)
+          const status = (over && !duce) // true: 比賽結束
+          
+          if (over && duce) { this.gameScore += 1 }
+          if (status) {
+            (this.teamA.score > this.teamB.score) ? this.teamA.win += 1 : this.teamB.win += 1
+          }
+          return status
+        }
+      },
+      methods: {
+        init () {
+          [this.teamA.score, this.teamB.score] = [0, 0]
+          this.gameScore = this.gameScoreInit
+          _.each(this.attacks, a => {
+            a.score = 0
+          })
+          _.each(this.violation, m => {
+            m.teamA = 0
+            m.teamB = 0
+          })
+        },
+        nextTeam () {
+          [this.teamA.win, this.teamB.win] = [0, 0]
+          this.init()
+        },
+        getLineWidth (score) {
+          return { width: _.toString((score / this.gameScore) * 50) + '%' }
+        },
+        addScore (type) {
+          this.attacks[type]['score'] += 1
+          this.teamA.score += 1
+        },
+        lossScore (team, type) {
+          this.violation[type][team] += 1
+          team === 'teamA' ? this.teamB.score += 1 : this.teamA.score += 1
+        }
+      }
+    });
