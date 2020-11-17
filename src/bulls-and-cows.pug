@@ -19,7 +19,7 @@ block content
     .row
       .col-sm.d-flex.justify-content-center.p-0
         .card.bg-light.mb-3
-          h2.card-header.text-center 猜數字遊戲
+          h3.card-header.text-center 猜數字遊戲
           .card-body
             .input-group.mb-2(v-for='(question, qId) in questions' :key='qId')
               input.form-control(type='text' v-model='question.userAns')
@@ -30,7 +30,7 @@ block content
               button.btn.btn-outline-danger(@click='init') 重玩
       .col-sm.d-flex.justify-content-center.p-0
         .card.bg-light.mb-3
-          h2.card-header.text-center 提示區
+          h3.card-header.text-center 提示區
           .card-body
             p {{warn}}
             p 總共有 {{all.length}} 種可能（顯示前 100 種）

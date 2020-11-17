@@ -12,7 +12,7 @@ block style
       #loading
         width: 99vw
       #app
-        h1, h5, a
+        h3, h5, a
           font-weight: bold
         .card
           .detail
@@ -43,7 +43,7 @@ block content
   #app.content.container.p-3(v-cloak)
     .d-flex.align-items-center.mb-3
       img.mr-3(src="https://i.imgur.com/FU5VL1T.png")
-      h1.m-0 作品集
+      h3.m-0 作品集
     template(v-if="this.loading")
       #loading.d-flex.flex-column.align-items-center
         .spinner-border.text-primary(role="status")
