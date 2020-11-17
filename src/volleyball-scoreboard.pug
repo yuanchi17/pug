@@ -10,7 +10,7 @@ block style
         display: none
 
       #app
-        .score-line
+        #score-line
           position: relative
           height: 30px
 
@@ -31,89 +31,63 @@ block style
 block content
   include /navbar
   #app.container.pt-3(v-cloak)
-    h3.text-center A 隊　VS　B 隊 
-    h3.text-center {{ teamA.win }}：{{ teamB.win }}
-    button.btn.btn-light.btn-lg.d-flex.mx-auto(@click="showScoreTmp = !showScoreTmp"): h4 {{ teamA.score }}：{{ teamB.score }}
-    .score-line.mb-3
+    h3.text-center(@click="changeName") {{ teams.teamA.name }}　VS　{{ teams.teamB.name }}
+    h3.text-center {{ teams.teamA.win }}：{{ teams.teamB.win }}
+    button.btn.btn-outline-info.btn-lg.d-flex.mx-auto(@click="showScoreBoard = !showScoreBoard") {{ teams.teamA.score }}：{{ teams.teamB.score }}
+    #score-line.my-3
       .line-win
       .progress
-        .progress-bar.progress-bar-striped.progress-bar-animated(role="progressbar" :style="scoreLineA") {{ teamA.score }}
-        .progress-bar.progress-bar-striped.progress-bar-animated.bg-warning.ml-auto(role="progressbar" :style="scoreLineB") {{ teamB.score }}
-    .button-group-game.d-flex.justify-content-around.mb-3(v-if="!gameOver")
+        .progress-bar.progress-bar-striped.progress-bar-animated(role="progressbar" :style="scoreLineA") {{ teams.teamA.score }}
+        .progress-bar.progress-bar-striped.progress-bar-animated.bg-warning.ml-auto(role="progressbar" :style="scoreLineB") {{ teams.teamB.score }}
+    #button-group-game.d-flex.justify-content-around.mb-3(v-if="!gameOver")
       .button-group.teamA
         button.btn.btn-primary.mr-1(@click="addScore('teamA', 'add')") 得分
       .button-group.d-flex.flex-column.justify-content-center
         button.btn.btn-outline-danger.mb-2(
-          v-if="teamA.score === 0 && teamB.score === 0" 
-          @click="updateGameScore") 減少比分（{{this.gameScore}}）
+          v-if="teams.teamA.score === 0 && teams.teamB.score === 0" 
+          @click="gameScore -= 1") 減少比分（{{this.gameScore}}）
         button.btn.btn-outline-danger.mb-2(v-else @click="subScore()") 回上一分
         button.btn.btn-outline-danger(@click="init()") 重新計分
       .button-group.teamB
         button.btn.btn-warning.mr-1(@click="addScore('teamB', 'add')") 得分
-    .button-group-gameover.d-flex.justify-content-around(v-else)
+    #button-group-gameover.d-flex.justify-content-around.mb-3(v-else)
       button.btn.btn-outline-primary(@click="init()") 再比一局
       button.btn.btn-outline-danger(@click="nextTeam()") 下一隊
 
-    table.table.table-bordered.table-responsive(v-if="showScoreTmp")
+    table.table.table-bordered.table-responsive(v-if="showScoreBoard")
       tbody
-        tr
-          th(scopr="row") A
-          td(v-for="(s, index) in scoreTmp" :key="index") {{ s.A }}
-        tr
-          th(scopr="row") B
-          td(v-for="(s, index) in scoreTmp" :key="index") {{ s.B }}
+        tr(v-for="team in ['A', 'B']" :key="team")
+          th(scopr="row") {{ team === 'A' ? teams.teamA.name : teams.teamB.name }}
+          td(v-for="(score, index) in scoreBoard" :key="index") {{ score[team] }}
 
-    .row(v-if="!gameOver")
-      .col-6
+    #record.row(v-if="!gameOver")
+      .col-6(v-for="team in ['teamA', 'teamB']" :key="team")
         .card
           .card-body
-            h5.card-title.text-center A 隊
-            .card-subtitle.mb-2.text-muted 得分
-            button.btn.btn-primary.btn-block(
-              @click="winScore('teamA', type)"
+            h5.card-title.text-center.m-0 {{ team === 'teamA' ? teams.teamA.name : teams.teamB.name }}
+            hr
+            .card-subtitle.mb-2.text-muted.text-center 得分
+            button.btn.btn-block(
+              :class="team === 'teamA' ? 'btn-primary' : 'btn-warning'"
+              @click="winScore(team, type)"
               v-for="(attack, type) in record.attacks" :key="type") {{ attack.name }}
-            .card-subtitle.my-2.text-muted 失誤
+            .card-subtitle.my-2.text-muted.text-center.mt-3 失誤
             button.btn.btn-secondary.btn-block(
-              @click="lossScore('teamA', type)"
+              @click="lossScore(team, type)"
               v-for="(fault, type) in record.faults" :key="type") {{ fault.name }}
-      .col-6
-        .card
-          .card-body
-            h5.card-title.text-center B 隊
-            .card-subtitle.mb-2.text-muted 得分
-            button.btn.btn-primary.btn-block(
-              @click="winScore('teamB', type)"
-              v-for="(attack, type) in record.attacks" :key="type") {{ attack.name }}
-            .card-subtitle.my-2.text-muted 失誤
-            button.btn.btn-secondary.btn-block(
-              @click="lossScore('teamB', type)"
-              v-for="(fault, type) in record.faults" :key="type") {{ fault.name }}
-    .row.mt-3
+    #record-board.row.mt-3(v-for="types in record" :key="types")
       .col
         table.table.table-bordered
           thead
             tr
-              th(scope="col") 得分
-              th(scope="col") A隊
-              th(scope="col") B隊
+              th(scope="col") {{ types === 'attacks' ? '得分' : '失誤' }}
+              th(scope="col") {{ teams.teamA.name }}
+              th(scope="col") {{ teams.teamB.name }}
           tbody
-            tr(v-for="(attack, type) in record.attacks" :key="type")
-              th(scopr="row") {{ attack.name }}
-              td {{ attack.teamA }}
-              td {{ attack.teamB }}
-    .row.mt-3
-      .col
-        table.table.table-bordered
-          thead
-            tr
-              th(scope="col") 失誤
-              th(scope="col") A隊
-              th(scope="col") B隊
-          tbody
-            tr(v-for="(fault, type) in record.faults" :key="type")
-              th(scopr="row") {{ fault.name }}
-              td {{ fault.teamA }}
-              td {{ fault.teamB }}
+            tr(v-for="(type, index) in types" :key="type")
+              th(scopr="row") {{ type.name }}
+              td {{ type.teamA }}
+              td {{ type.teamB }}
     
 
 block script
@@ -121,18 +95,22 @@ block script
     const vm = new Vue ({
       el: "#app",
       data: {
-        gameScore: 5, // 真正比賽分數
-        gameScoreInit: 5, // 比賽分數初始值
-        showScoreTmp: true,
-        scoreTmp: [],
-        lastGetScore: [], // 紀錄得分順序
-        teamA: {
-          win: 0,
-          score: 0
-        },
-        teamB: {
-          win: 0,
-          score: 0
+        gameScore: 25, // 真正比賽分數
+        gameScoreInit: 25, // 比賽分數初始值
+        showScoreBoard: true,
+        scoreBoard: [],
+        scoreOrder: [], // 紀錄得分順序
+        teams: {
+          teamA: {
+            name: 'A 隊',
+            win: 0,
+            score: 0
+          },
+          teamB: {
+            name: 'B 隊',
+            win: 0,
+            score: 0
+          },
         },
         record: {
           attacks: {
@@ -153,27 +131,25 @@ block script
       },
       computed: {
         scoreLineA () {
-          return this.getLineWidth(this.teamA.score)
+          return this.getLineWidth(this.teams.teamA.score)
         },
         scoreLineB () {
-          return this.getLineWidth(this.teamB.score)
+          return this.getLineWidth(this.teams.teamB.score)
         },
         gameOver () {
-          const over = (this.teamA.score === this.gameScore || this.teamB.score === this.gameScore)
-          const duce = (Math.abs(this.teamA.score - this.teamB.score) === 1)
+          const scoreA = this.teams.teamA.score
+          const scoreB = this.teams.teamB.score
+          const over = (scoreA === this.gameScore || scoreB === this.gameScore)
+          const duce = (Math.abs(scoreA - scoreB) === 1)
           const status = (over && !duce) // true: 比賽結束
           
           if (over && duce) { 
             this.gameScore += 1 
-            this.scoreTmp.push({ A: '', B: '' })
+            this.scoreBoard.push(...[{ A: '', B: '' }, { A: '', B: '' }])
           }
           if (status) {
-            (this.teamA.score > this.teamB.score) ? this.teamA.win += 1 : this.teamB.win += 1
-            this.scoreTmp = _.filter(this.scoreTmp, s => {
-              console.log(s.A)
-              if (s.A !== "" || s.B !== "") return s // TODO 調整記分板格子
-            })
-            console.log(this.scoreTmp)
+            (scoreA > scoreB) ? this.teams.teamA.win += 1 : this.teams.teamB.win += 1
+            this.scoreBoard = _.filter(this.scoreBoard, s => (s.A !== "" || s.B !== ""))
             this.grades()
           }
           return status
@@ -181,10 +157,10 @@ block script
       },
       methods: {
         init () {
-          [this.teamA.score, this.teamB.score] = [0, 0]
+          [this.teams.teamA.score, this.teams.teamB.score] = [0, 0]
           this.gameScore = this.gameScoreInit
-          this.lastGetScore = []
-          this.scoreTmp = _.times(this.gameScore * 2, () => { return { A: '', B: '' }})
+          this.scoreOrder = []
+          this.scoreBoard = _.times(this.gameScore * 2, () => { return { A: '', B: '' } })
           _.each(this.record, types => {
             _.each(types, type => {
               type.teamA = 0
@@ -193,7 +169,7 @@ block script
           })
         },
         nextTeam () {
-          [this.teamA.win, this.teamB.win] = [0, 0]
+          [this.teams.teamA.win, this.teams.teamB.win] = [0, 0]
           this.init()
         },
         getLineWidth (score) {
@@ -208,16 +184,16 @@ block script
           team === 'teamA' ? this.addScore('teamB', `faults.${type}`) : this.addScore('teamA', `faults.${type}`)
         },
         addScore (team, type) {
-          const index = this.teamA.score + this.teamB.score
+          const index = this.teams.teamA.score + this.teams.teamB.score
 
-          team === 'teamA' ? this.teamA.score += 1 : this.teamB.score += 1
-          _.update(this.scoreTmp[index], 'A', s => { return team === 'teamA' ?  this.teamA.score : '' })
-          _.update(this.scoreTmp[index], 'B', s => { return team === 'teamB' ?  this.teamB.score : '' })
-          this.lastGetScore.push({ type, team })
+          team === 'teamA' ? this.teams.teamA.score += 1 : this.teams.teamB.score += 1
+          _.update(this.scoreBoard[index], 'A', s => { return team === 'teamA' ?  this.teams.teamA.score : '' })
+          _.update(this.scoreBoard[index], 'B', s => { return team === 'teamB' ?  this.teams.teamB.score : '' })
+          this.scoreOrder.push({ team, type })
         },
         subScore () {
-          const index = this.teamA.score + this.teamB.score -1
-          const lastScore = this.lastGetScore.pop()
+          const index = this.teams.teamA.score + this.teams.teamB.score -1
+          const lastScore = this.scoreOrder.pop()
           let lastScoreType
 
           switch (_.split(lastScore.type, '.')[0]) {
@@ -231,12 +207,24 @@ block script
               break
           }
 
-          lastScore.team === 'teamA' ? this.teamA.score -= 1 : this.teamB.score -= 1
-          this.scoreTmp[index] = { A: '', B: '' }
+          lastScore.team === 'teamA' ? this.teams.teamA.score -= 1 : this.teams.teamB.score -= 1
+          this.scoreBoard[index] = { A: '', B: '' }
         },
-        updateGameScore () {
-          this.gameScore -= 1
-          this.scoreTmp = _.times(this.gameScore * 2, () => { return { A: '', B: '' }})
+        async changeName () {
+          const { value: teamAName } = await Swal.fire({
+            title: '更改 A 隊隊名',
+            input: 'text',
+            inputValue: this.teams.teamA.name,
+            showCancelButton: true
+          })
+          const { value: teamBName } = await Swal.fire({
+            title: '更改 B 隊隊名',
+            input: 'text',
+            inputValue: this.teams.teamB.name,
+            showCancelButton: true
+          })
+          if (teamAName) this.teams.teamA.name = teamAName 
+          if (teamBName) this.teams.teamB.name = teamBName 
         },
         grades () {
           Swal.fire({
@@ -252,9 +240,9 @@ block script
                   </thead>
                   <tbody>
                     <tr>
-                      <td>${this.teamA.score}</td>
+                      <td>${this.teams.teamA.score}</td>
                       <th scope="row">得分</th>
-                      <td>${this.teamB.score}</td>
+                      <td>${this.teams.teamB.score}</td>
                     </tr>
                     <tr>
                       <td>${this.record.attacks.attack.teamA}</td>
