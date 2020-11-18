@@ -76,12 +76,12 @@ block content
             button.btn.btn-secondary.btn-block(
               @click="lossScore(team, type)"
               v-for="(fault, type) in record.faults" :key="type") {{ fault.name }}
-    #record-board.row.mt-3(v-for="types in record" :key="types")
+    #record-board.row.mt-3(v-for="(types, tKey) in record" :key="tKey")
       .col
         table.table.table-bordered
           thead
             tr
-              th(scope="col") {{ types === 'attacks' ? '得分' : '失誤' }}
+              th(scope="col") {{ tKey === 'attacks' ? '得分' : '失誤' }}
               th(scope="col") {{ teams.teamA.name }}
               th(scope="col") {{ teams.teamB.name }}
           tbody
