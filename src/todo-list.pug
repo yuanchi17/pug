@@ -47,13 +47,13 @@ block content
 block script
   script.
     Vue.component('vue-ctk-date-time-picker', window['vue-ctk-date-time-picker'])
-    const vm = new Vue({
+    const vm = new Vue({ // eslint-disable-line no-unused-vars
       el: '#app',
       data: {
         doneList: [],
         duedate: '',
         todoItem: '代辦事項',
-        todoList: []
+        todoList: [],
       },
       async mounted () {
         await this.init()
@@ -84,7 +84,7 @@ block script
           }
           this.todoList.push({
             date: this.duedate,
-            todo: this.todoItem
+            todo: this.todoItem,
           })
           localStorage.setItem('todoList', JSON.stringify(this.todoList))
         },
@@ -121,6 +121,6 @@ block script
           if (!confirm.value) return
           localStorage.removeItem('doneList')
           this.init()
-        }
-      }
+        },
+      },
     })

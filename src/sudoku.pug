@@ -32,26 +32,26 @@ block content
 
 block script
   script.
-    const vm = new Vue ({
+    const vm = new Vue({ // eslint-disable-line no-unused-vars
       el: '#app',
       data: {
         sudoku: [
-          ['8','','','','','','','',''],
-          ['','','3','6','','','','',''],
-          ['','7','','','9','','2','',''],
-          ['','5','','','','7','','',''],
-          ['','','','','4','5','7','',''],
-          ['','','','1','','','','3',''],
-          ['','','1','','','','','6','8'],
-          ['','','8','5','','','','1',''],
-          ['','9','','','','','4','','']
+          ['8', '', '', '', '', '', '', '', ''],
+          ['', '', '3', '6', '', '', '', '', ''],
+          ['', '7', '', '', '9', '', '2', '', ''],
+          ['', '5', '', '', '', '7', '', '', ''],
+          ['', '', '', '', '4', '5', '7', '', ''],
+          ['', '', '', '1', '', '', '', '3', ''],
+          ['', '', '1', '', '', '', '', '6', '8'],
+          ['', '', '8', '5', '', '', '', '1', ''],
+          ['', '9', '', '', '', '', '4', '', ''],
         ],
         box: {},
         row: {},
         col: {},
         refAns: [],
         userAns: '',
-        alert: ''
+        alert: '',
       },
       created () {
         // this.init()
@@ -59,21 +59,29 @@ block script
       computed: {
         checkAns () {
           this.box = {}
-          for (let x=0; x < 9; x++) {
+          for (let x = 0; x < 9; x++) {
             this.row = {}
             this.col = {}
-            for (let y=0; y < 9; y++) {
+            for (let y = 0; y < 9; y++) {
               const nx = this.sudoku[x][y]
               const ny = this.sudoku[y][x]
-              const boxId = parseInt(y/3) + 3*parseInt(x/3) // 屬於哪一個九宮格: 0 ~ 8
-              const inBoxId = parseInt(y%3) + 3*parseInt(x%3)
-              
-              if (this.row[nx]) return this.alert = 'x軸已重複'
+              const boxId = parseInt(y / 3) + 3 * parseInt(x / 3) // 屬於哪一個九宮格: 0 ~ 8
+
+              if (this.row[nx]) {
+                this.alert = 'x軸已重複'
+                return
+              }
               this.row[nx] = nx
-              if (this.col[ny]) return this.alert = 'y軸已重複'
+              if (this.col[ny]) {
+                this.alert = 'y軸已重複'
+                return
+              }
               this.col[ny] = ny
               if (this.box[boxId]) {
-                if (this.box[boxId][nx]) return this.alert = '九宮格已重複'
+                if (this.box[boxId][nx]) {
+                  this.alert = '九宮格已重複'
+                  return
+                }
                 this.box[boxId][nx] = nx
                 continue
               }
@@ -81,38 +89,38 @@ block script
               this.box[boxId][nx] = nx
             }
           }
-          return this.alert = '請答題'
-        }
+          this.alert = '請答題'
+        },
       },
       methods: {
         // init () {
         // },
         referenceAns (xId, yId) {
-          this.refAns = {xId, yId, ans: []}
+          this.refAns = { xId, yId, ans: [] }
           if (this.checkAns === '請答題') return
 
           const existX = this.sudoku[xId]
           const existY = []
           const existBox = []
-          const boxId = parseInt(yId/3) + 3*parseInt(xId/3) // 屬於哪一個九宮格: 0 ~ 8
-          
-          for (let x=0; x < 9; x++) {
-            for (let y=0; y < 9; y++) {
+          const boxId = parseInt(yId / 3) + 3 * parseInt(xId / 3) // 屬於哪一個九宮格: 0 ~ 8
+    
+          for (let x = 0; x < 9; x++) {
+            for (let y = 0; y < 9; y++) {
               const number = this.sudoku[x][y]
-              const box = parseInt(y/3) + 3*parseInt(x/3)
+              const box = parseInt(y / 3) + 3 * parseInt(x / 3)
               if (y === yId) existY.push(parseInt(number))
               if (box === boxId) existBox.push(parseInt(number))
             }
           }
-          
+    
           const existAll = _.uniq(_.concat(existY, existBox, existX))
-          for (let i of _.range(1, 9)) {
-            if (_.indexOf(existAll, i) === -1 ) this.refAns.ans.push(i)
+          for (const i of _.range(1, 9)) {
+            if (_.indexOf(existAll, i) === -1) this.refAns.ans.push(i)
           }
         },
         selectAns (index) {
           this.$set(this.sudoku[this.refAns.xId], this.refAns.yId, this.refAns.ans[index])
           this.refAns.ans = []
-        }
-      }
+        },
+      },
     })

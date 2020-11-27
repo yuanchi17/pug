@@ -57,14 +57,14 @@ block script
       '4A0B': 40,
     }
 
-    const vm = new Vue({
+    const vm = new Vue({ // eslint-disable-line no-unused-vars
       el: '#app',
-      data:{
+      data: {
         warn: '',
         all: [],
         result: 0, // 篩選的 result
         resultList: _.invert(resultAll),
-        questions: []
+        questions: [],
       },
       mounted () {
         this.init()
@@ -72,28 +72,29 @@ block script
       computed: {
         getAll () {
           this.all = []
-          this.warn = ""
+          this.warn = ''
           const allQuestion = _.filter(this.questions, q => {
             if (/^\d{4}$/.test(q.userAns) && _.uniq(q.userAns).length === 4) return q
           })
           if (allQuestion.length === 0) {
             this.warn = '請至少填寫一欄答案（四位不重複數字）'
-            return this.all = []
+            this.all = []
+            return []
           }
-          for (let n1 = 0 ; n1 < 10 ; n1++) {
-            for (let n2 = 0 ; n2 < 10 ; n2++) {
+          for (let n1 = 0; n1 < 10; n1++) {
+            for (let n2 = 0; n2 < 10; n2++) {
               if (n1 === n2) continue
-              for (let n3 = 0 ; n3 < 10 ; n3++) {
+              for (let n3 = 0; n3 < 10; n3++) {
                 if (n1 === n3 || n2 === n3) continue
-                for (let n4 = 0 ; n4 < 10 ; n4++) {
+                for (let n4 = 0; n4 < 10; n4++) {
                   if (n1 === n4 || n2 === n4 || n3 === n4) continue
-                  
-                  let predictAns = ''.concat(n1, n2, n3, n4)
+    
+                  const predictAns = ''.concat(n1, n2, n3, n4)
                   let predictCorrect
-                  for (let q of allQuestion) {
+                  for (const q of allQuestion) {
                     this.result = 0
                     predictCorrect = false
-                    for (let number of q.userAns) {
+                    for (const number of q.userAns) {
                       if (predictAns.indexOf(number) === q.userAns.indexOf(number)) {
                         this.result += 10 // A
                         continue
@@ -109,25 +110,26 @@ block script
               }
             }
           }
-          return this.all = _.uniq(this.all) // 重複的只留一個
-        }
+          this.all = _.uniq(this.all)
+          return this.all // 重複的只留一個
+        },
       },
       methods: {
         init () {
           this.all = []
-          this.warn = ""
-          this.questions = _.times(8, () => { return {userAns: '', userResult: '0A0B' } })
+          this.warn = ''
+          this.questions = _.times(8, () => { return { userAns: '', userResult: '0A0B' } })
         },
         selectAns (i) {
           let autoInput = false
-          for (let qId in this.questions) {
+          for (const qId in this.questions) {
             if (!/^\d{4}$/.test(this.questions[qId].userAns)) {
               this.questions[qId].userAns = this.all[i]
-              autoInput = ture
+              autoInput = true
             }
             if (autoInput) return
             continue
           }
         },
-      }
+      },
     })

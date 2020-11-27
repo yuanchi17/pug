@@ -62,15 +62,14 @@ block content
 
 block script
   script.
-    const vm = new Vue({
+    const vm = new Vue({ // eslint-disable-line no-unused-vars
       el: '#app',
       data: {
         loading: true,
-        works: [],
-        worksDefault: [
-          {title: '猜數字遊戲', image: 'uWxlelx', url: './bulls-and-cows.html', text: '1A2B 解題工具', button: '我要玩'},
-          {title: '17 來玩板', image: 'C29rqFO', url: 'https://line.me/R/ti/p/@117idlhz', text: '用 LINE Chatbot 做一個簡易的滑板介紹及查詢', button: '加入 chatbot'},
-        ]
+        works: [
+          { title: '猜數字遊戲', image: 'uWxlelx', url: './bulls-and-cows.html', text: '1A2B 解題工具', button: '我要玩' },
+          { title: '17 來玩板', image: 'C29rqFO', url: 'https://line.me/R/ti/p/@117idlhz', text: '用 LINE Chatbot 做一個簡易的滑板介紹及查詢', button: '加入 chatbot' },
+        ],
       },
       async mounted () {
         await this.init()
@@ -91,10 +90,9 @@ block script
             this.loading = false
           } catch (err) {
             console.log(err)
-            this.works = this.worksDefault
             this.loading = false
             throw err
           }
-        }
-      }
+        },
+      },
     })
