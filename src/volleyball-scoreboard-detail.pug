@@ -1,0 +1,485 @@
+extends layout
+
+block beforehtml
+  - const title = '排球記分板'
+
+block style
+  style
+    :sass
+      [v-cloak]
+        display: none
+
+      #app
+        #score-line
+          position: relative
+          height: 30px
+
+          .line-win
+            width: 1.5px
+            height: 30px
+            background-color: red
+            position: relative
+            left: 50%
+            transform:  translateX(-50%)
+            z-index: 1
+
+          .progress
+            top: -30px
+            position: relative
+            height: 30px
+        .player-btn
+          width: 22%
+        .player-record
+          border: none
+
+block content
+  include /navbar
+  #app.container.pt-3(v-cloak)
+    h3.text-center(@click="changeName") {{ teamA.name }}　VS　{{ teamB.name }}
+    h3.text-center {{ teamA.win }}：{{ teamB.win }}
+    button.btn.btn-outline-info.btn-lg.d-flex.mx-auto(@click="showScoreBoard = !showScoreBoard") {{ teamA.score }}：{{ teamB.score }}
+    #score-line.my-3
+      .line-win
+      .progress
+        .progress-bar.progress-bar-striped.progress-bar-animated(role="progressbar" :style="scoreLineA") {{ teamA.score }}
+        .progress-bar.progress-bar-striped.progress-bar-animated.bg-warning.ml-auto(role="progressbar" :style="scoreLineB") {{ teamB.score }}
+    #button-group-game.d-flex.justify-content-around.mb-3(v-if="!gameOver")
+      .button-group.teamA
+        button.btn.btn-primary.mr-1(@click="winScore('teamA', '其他')") 得分
+      .button-group.d-flex.flex-column.justify-content-center
+        button.btn.btn-outline-danger.mb-2(
+          v-if="teamA.score === 0 && teamB.score === 0" 
+          @click="gameScore -= 1") 減少比分（{{this.gameScore}}）
+        button.btn.btn-outline-danger.mb-2(v-else @click="subScore()") 回上一分
+        button.btn.btn-outline-danger(@click="init()") 重新計分
+      .button-group.teamB
+        button.btn.btn-warning.mr-1(@click="winScore('teamB', '其他')") 得分
+    #button-group-gameover.d-flex.justify-content-around.mb-3(v-else)
+      button.btn.btn-outline-primary(@click="init()") 再比一局
+      button.btn.btn-outline-success(v-if="storyRecords" @click="showStoryRecord()") 總紀錄
+      button.btn.btn-outline-danger(@click="nextTeam()") 下一隊
+
+    table.table.table-bordered.table-responsive(v-if="showScoreBoard")
+      tbody
+        tr(v-for="team in ['A', 'B']" :key="team")
+          th.text-nowrap(scopr="row") {{ team === 'A' ? teamA.name : teamB.name }}
+          td(v-for="(score, index) in scoreBoard" :key="index") {{ score[team] }}
+
+    #record(v-if="!gameOver")
+      .row
+        .col
+          .card.mb-3
+            .card-body
+              .d-flex.justify-content-center
+                h5.card-title.text-center.m-0.mr-2.d-flex.flex-column.justify-content-center {{ teamA.name }}
+                button.btn.btn-outline-primary.mr-2(@click="showRecordTeamA = !showRecordTeamA") 紀錄
+                button.btn.btn-outline-primary(@click="球員") 球員
+              hr
+              #players(v-for="player in teamA.players" :key="player")
+              .d-flex.justify-content-around.mb-2
+                button.btn.btn-link.player-btn(
+                  @click="recordPlayer = player"
+                  v-for="player in teamA.players" :key="player") {{ player }}
+              .d-flex.justify-content-around.mb-2
+                button.btn.player-btn.btn-primary(
+                  @click="winScore('teamA', type)"
+                  v-for="type in record.attacks" :key="type") {{ type }}
+              .d-flex.justify-content-around
+                button.btn.btn-secondary.player-btn(
+                  @click="lossScore('teamA', type)"
+                  v-for="type in record.faults" :key="type") {{ type }}
+
+            //- 我方球員紀錄
+            table.table.table-bordered.table-responsive.m-0.player-record(v-if="showRecordTeamA && teamA.players.length")
+              thead
+                tr
+                  th.text-nowrap(scope="col") 得分/失誤
+                  th.text-center(scope="col" v-for="player in teamA.players" :key="player") {{ player }}
+              tbody
+                tr(v-for="(type, index) in ['發球', '攻擊', '攔網/接噴', '其他']" :key="type")
+                  th(scopr="row") {{ type }}
+                  td.text-nowrap(scope="col" v-for="player in teamA.players" :key="player") {{ _.get(teamA.playerRecord, [player, 'attacks', type], 0) }} / {{ _.get(teamA.playerRecord, [player, 'faults', type], 0) }}
+        .col
+          .card
+            .card-body
+              .d-flex.justify-content-center
+                h5.card-title.text-center.m-0.mr-2.d-flex.flex-column.justify-content-center {{ teamB.name }}
+                button.btn.btn-outline-primary.mr-2(@click="showRecordTeamB = !showRecordTeamB") 紀錄
+                button.btn.btn-outline-primary(@click="球員") 球員
+              hr
+              #players(v-for="player in teamB.players" :key="player")
+              .d-flex.justify-content-around.mb-2
+                button.btn.btn-link.player-btn(
+                  @click="recordPlayer = player"
+                  v-for="player in teamB.players" :key="player") {{ player }}
+              .d-flex.justify-content-around.mb-2
+                button.btn.player-btn.btn-warning(
+                  @click="winScore('teamB', type)"
+                  v-for="type in record.attacks" :key="type") {{ type }}
+              .d-flex.justify-content-around
+                button.btn.btn-secondary.player-btn(
+                  @click="lossScore('teamB', type)"
+                  v-for="type in record.faults" :key="type") {{ type }}
+            //- 敵方球員紀錄
+            table.table.table-bordered.table-responsive.m-0.player-record(v-if="showRecordTeamB && teamB.players.length")
+              thead
+                tr
+                  th.text-nowrap(scope="col") 得分/失誤
+                  th.text-center(scope="col" v-for="player in teamB.players" :key="player") {{ player }}
+              tbody
+                tr(v-for="(type, index) in ['發球', '攻擊', '攔網/接噴', '其他']" :key="type")
+                  th(scopr="row") {{ type }}
+                  td.text-nowrap(scope="col" v-for="player in teamB.players" :key="player") {{ _.get(teamB.playerRecord, [player, 'attacks', type], 0) }} / {{ _.get(teamB.playerRecord, [player, 'faults', type], 0) }}
+
+block script
+  script.
+    // TODO 使用規則： 1.灰色按鈕為"失分" 2.請先選擇得失分隊員，再進行計分，若無選擇，則直接計入團隊得失分
+
+    const GAME_SCORE = 25 // 比賽分數
+    const vm = new Vue({ // eslint-disable-line no-unused-vars
+      el: '#app',
+      data: {
+        gameScore: 25,
+        recordPlayer: null, // 選定的球員
+        scoreBoard: [], // 分數板
+        scoreOrder: [], // 紀錄得分順序
+        showRecordTeamA: false,
+        showRecordTeamB: false,
+        showScoreBoard: true,
+        storyRecords: [], // 總紀錄
+        teamA: {
+          name: '我方',
+          win: 0,
+          score: 0,
+          players: [17, 54, 18, 15, 2, 1],
+          playerRecord: {}, // { 17: { attacks: { 發球: 3 }, faults: { 攻擊: 2 }}}
+        },
+        teamB: {
+          name: '敵方',
+          win: 0,
+          score: 0,
+          players: [1 ,2 ,3 ,4 ,5 ,6],
+          playerRecord: {},
+        },
+        record: {
+          attacks: ['發球', '攻擊', '攔網', '其他'],
+          faults: ['發球', '攻擊', '接噴', '其他'],
+        },
+      },
+      mounted () {
+        this.init()
+      },
+      computed: {
+        scoreLineA () {
+          return this.getLineWidth(this.teamA.score)
+        },
+        scoreLineB () {
+          return this.getLineWidth(this.teamB.score)
+        },
+        gameOver () {
+          const scoreA = this.teamA.score
+          const scoreB = this.teamB.score
+          const over = (scoreA === this.gameScore || scoreB === this.gameScore)
+          const duce = (Math.abs(scoreA - scoreB) === 1)
+          const status = (over && !duce) // true: 比賽結束
+    
+          if (over && duce) {
+            this.gameScore += 1
+            this.scoreBoard.push(...[{ A: '', B: '' }, { A: '', B: '' }])
+          }
+          if (status) {
+            (scoreA > scoreB) ? this.teamA.win += 1 : this.teamB.win += 1
+            this.scoreBoard = _.filter(this.scoreBoard, s => (s.A !== '' || s.B !== ''))
+            console.log(this.teamA)
+            this.grades()
+          }
+          return status
+        },
+      },
+      methods: {
+        init () {
+          [this.teamA.score, this.teamB.score] = [0, 0]
+          this.gameScore = GAME_SCORE
+          this.scoreOrder = []
+          this.scoreBoard = _.times(this.gameScore * 2, () => { return { A: '', B: '' } })
+          _.each([this.teamA, this.teamB], t => {
+            t.score = 0
+            t.playerRecord = {}
+          })
+
+          this.storyRecords = JSON.parse(localStorage.getItem('scoreboard')) || []
+        },
+        nextTeam () {
+          [this.teamA.win, this.teamB.win] = [0, 0]
+          localStorage.removeItem('scoreboard')
+          this.init()
+        },
+        getLineWidth (score) {
+          return { width: _.toString((score / this.gameScore) * 50) + '%' }
+        },
+        winScore (team, type) { // 得分
+          type = type === '攔網' ? '攔網/接噴' : type
+          this.recordPlayer = this.recordPlayer || 'team'
+          this.updateRecord(team === 'teamA' ? this.teamA : this.teamB, 'attacks', type)
+          this.addScore(team, `attacks.${type}`)
+        },
+        lossScore (team, type) { // 失分
+          type = type === '接噴' ? '攔網/接噴' : type
+          this.recordPlayer = this.recordPlayer || 'team'
+          this.updateRecord(team === 'teamA' ? this.teamA : this.teamB, 'faults', type)
+          this.addScore(team === 'teamA' ? 'teamB' : 'teamA', `faults.${type}`)
+        },
+        updateRecord (team, recodeType, type) { // 更新紀錄
+          _.update(team, ['playerRecord', this.recordPlayer, recodeType, type], n => { return n ? n + 1 : 1 })
+          team = Object.assign({}, team)
+        },
+        addScore (team, type) { // 加分
+          const index = this.teamA.score + this.teamB.score
+
+          team === 'teamA' ? this.teamA.score += 1 : this.teamB.score += 1
+          _.update(this.scoreBoard[index], 'A', s => { return team === 'teamA' ? this.teamA.score : '' })
+          _.update(this.scoreBoard[index], 'B', s => { return team === 'teamB' ? this.teamB.score : '' })
+          this.scoreOrder.push({ team, type, player: this.recordPlayer })
+          this.recordPlayer = null
+        },
+        subScore () { // 扣分，回上一步
+          const index = this.teamA.score + this.teamB.score - 1
+          const lastScore = this.scoreOrder.pop()
+          console.log('lastScore', lastScore)
+          let team
+
+          switch (_.split(lastScore.type, '.')[0]) {
+            case 'attacks':
+              team = lastScore.team === 'teamA' ? this.teamA : this.teamB
+              _.update(team, ['playerRecord', lastScore.player, ...(lastScore.type.split('.'))], n => { return n - 1 })
+              console.log(team)
+              team = Object.assign({}, team)
+              break
+            case 'faults':
+              team = lastScore.team === 'teamA' ? this.teamB : this.teamA
+              _.update(team, ['playerRecord', lastScore.player, ...(lastScore.type.split('.'))], n => { return n - 1 })
+              team = Object.assign({}, team)
+              break
+          }
+
+          lastScore.team === 'teamA' ? this.teamA.score -= 1 : this.teamB.score -= 1
+          this.scoreBoard[index] = { A: '', B: '' }
+        },
+        async changeName () {
+          const { value: teamAName } = await Swal.fire({
+            title: '更改我方隊名',
+            input: 'text',
+            inputValue: this.teamA.name,
+            showCancelButton: true,
+          })
+          const { value: teamBName } = await Swal.fire({
+            title: '更改敵方隊名',
+            input: 'text',
+            inputValue: this.teamB.name,
+            showCancelButton: true,
+          })
+          this.teamA.name = teamAName || this.teamA.name
+          this.teamB.name = teamBName || this.teamB.name
+        },
+        grades () {
+          const tA = {
+            attackScore: {
+              發球: 0,
+              攻擊: 0,
+              攔網: 0,
+              其他: 0,
+            },
+            faultScore: {
+              發球: 0,
+              攻擊: 0,
+              接噴: 0,
+              其他: 0,
+            },
+          }
+          const tB = {
+            attackScore: {
+              發球: 0,
+              攻擊: 0,
+              攔網: 0,
+              其他: 0,
+            },
+            faultScore: {
+              發球: 0,
+              攻擊: 0,
+              接噴: 0,
+              其他: 0,
+            },
+          }
+          // 各隊總得失分
+          _.each(['teamA', 'teamB'], t => {
+            const playerRecord = t === 'teamA' ? this.teamA.playerRecord : this.teamB.playerRecord
+            _.each(playerRecord, player => {
+              _.each(player.attacks, (val, type) => {
+                type = type === '攔網/接噴' ? '攔網' : type
+                t === 'teamA' ? tA.attackScore[type] += val : tB.attackScore[type] += val
+              })
+              _.each(player.faults, (val, type) => {
+                type = type === '攔網/接噴' ? '接噴' : type
+                t === 'teamA' ? tA.faultScore[type] += val : tB.faultScore[type] += val
+              })
+            })
+          })
+
+          // 儲存每次的紀錄
+          this.storyRecords = {
+            teamA: this.teamA.name,
+            teamB: this.teamB.name,
+            score: {
+              teamA: [..._.get(this.storyRecords, 'score.teamA', []), this.teamA.score],
+              teamB: [..._.get(this.storyRecords, 'score.teamB', []), this.teamB.score],
+            },
+            tADetail: {
+              attackScore: _.zipObject(
+                this.record.attacks,
+                _.map(this.record.attacks, type => { return [..._.get(this.storyRecords, `tADetail.attackScore.${type}`, []), tA.attackScore[type]] })
+              ),
+              faultScore: _.zipObject(
+                this.record.faults,
+                _.map(this.record.faults, type => { return [..._.get(this.storyRecords, `tADetail.faultScore.${type}`, []), tA.faultScore[type]] })
+              ),
+              faultSum: [..._.get(this.storyRecords, 'tADetail.faultSum', []), _.sum(_.values(tA.faultScore))],
+            },
+            tBDetail: {
+              attackScore: _.zipObject(
+                this.record.attacks,
+                _.map(this.record.attacks, type => { return [..._.get(this.storyRecords, `tBDetail.attackScore.${type}`, []), tB.attackScore[type]] })
+              ),
+              faultScore: _.zipObject(
+                this.record.faults,
+                _.map(this.record.faults, type => { return [..._.get(this.storyRecords, `tBDetail.faultScore.${type}`, []), tB.faultScore[type]] })
+              ),
+              faultSum: [..._.get(this.storyRecords, 'tBDetail.faultSum', []), _.sum(_.values(tB.faultScore))],
+            },
+          }
+          localStorage.setItem('scoreboard', JSON.stringify(this.storyRecords))
+
+          Swal.fire({
+            html: `<div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th scope="col">${this.teamA.name}</th>
+                    <th scope="col"></th>
+                    <th scope="col">${this.teamB.name}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>${this.teamA.score}</td>
+                    <th scope="row">得分</th>
+                    <td>${this.teamB.score}</td>
+                  </tr>
+                  <tr>
+                    <td>${tA.attackScore['攻擊']}</td>
+                    <th scope="row">攻擊得分</th>
+                    <td>${tB.attackScore['攻擊']}</td>
+                  </tr>
+                  <tr>
+                    <td>${tA.attackScore['發球']}</td>
+                      <th scope="row">發球得分</th>
+                    <td>${tB.attackScore['發球']}</td>
+                  </tr>
+                  <tr>
+                    <td>${tA.attackScore['攔網']}</td>
+                    <th scope="row">攔網得分</th>
+                    <td>${tB.attackScore['攔網']}</td>
+                  </tr>
+                  <tr>
+                    <td>${tA.attackScore['其他']}</td>
+                    <th scope="row">其他得分</th>
+                    <td>${tB.attackScore['其他']}</td>
+                  </tr>
+                  <tr>
+                    <td>${_.sum(_.values(tB.faultScore))}</td>
+                    <th scope="row">對方失誤</th>
+                    <td>${_.sum(_.values(tA.faultScore))}</td>
+                  </tr>
+                  </tbody></table></div>`,
+          })
+        },
+        async showStoryRecord () {
+          const result = await Swal.fire({
+            showCancelButton: true,
+            cancelButtonText: '返回',
+            confirmButtonText: '清除紀錄',
+            html: `<div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th scope="col">${this.storyRecords.teamA}</th>
+                    <th scope="col"></th>
+                    <th scope="col">${this.storyRecords.teamB}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>${this.storyRecords.score.teamA.join(' / ')}</td>
+                    <th scope="row">總得分</th>
+                    <td>${this.storyRecords.score.teamB.join(' / ')}</td>
+                  </tr>
+                  <tr>
+                    <td>${this.storyRecords.tADetail.attackScore['攻擊'].join(' / ')}</td>
+                    <th scope="row">攻擊</th>
+                    <td>${this.storyRecords.tBDetail.attackScore['攻擊'].join(' / ')}</td>
+                  </tr>
+                  <tr>
+                    <td>${this.storyRecords.tADetail.attackScore['發球'].join(' / ')}</td>
+                      <th scope="row">發球</th>
+                    <td>${this.storyRecords.tBDetail.attackScore['發球'].join(' / ')}</td>
+                  </tr>
+                  <tr>
+                    <td>${this.storyRecords.tADetail.attackScore['攔網'].join(' / ')}</td>
+                    <th scope="row">攔網</th>
+                    <td>${this.storyRecords.tBDetail.attackScore['攔網'].join(' / ')}</td>
+                  </tr>
+                  <tr>
+                    <td>${this.storyRecords.tADetail.attackScore['其他'].join(' / ')}</td>
+                    <th scope="row">其他</th>
+                    <td>${this.storyRecords.tBDetail.attackScore['其他'].join(' / ')}</td>
+                  </tr>
+                  <tr>
+                    <td>${this.storyRecords.tBDetail.faultSum.join(' / ')}</td>
+                    <th scope="row">對方失誤</th>
+                    <td>${this.storyRecords.tADetail.faultSum.join(' / ')}</td>
+                  </tr>
+                  </tbody></table>
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th scope="col">${this.storyRecords.teamA}</th>
+                    <th scope="col">失誤</th>
+                    <th scope="col">${this.storyRecords.teamB}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>${this.storyRecords.tADetail.faultScore['攻擊'].join(' / ')}</td>
+                    <th scope="row">攻擊</th>
+                    <td>${this.storyRecords.tBDetail.faultScore['攻擊'].join(' / ')}</td>
+                  </tr>
+                  <tr>
+                    <td>${this.storyRecords.tADetail.faultScore['發球'].join(' / ')}</td>
+                      <th scope="row">發球</th>
+                    <td>${this.storyRecords.tBDetail.faultScore['發球'].join(' / ')}</td>
+                  </tr>
+                  <tr>
+                    <td>${this.storyRecords.tADetail.faultScore['接噴'].join(' / ')}</td>
+                    <th scope="row">接噴</th>
+                    <td>${this.storyRecords.tBDetail.faultScore['接噴'].join(' / ')}</td>
+                  </tr>
+                  <tr>
+                    <td>${this.storyRecords.tADetail.faultScore['其他'].join(' / ')}</td>
+                    <th scope="row">其他</th>
+                    <td>${this.storyRecords.tBDetail.faultScore['其他'].join(' / ')}</td>
+                  </tr>
+                  </tbody></table></div>`,
+          })
+          if (result.isConfirmed) this.nextTeam()
+        },
+      },
+    })
