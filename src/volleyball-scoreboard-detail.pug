@@ -99,7 +99,7 @@ block content
                   th(scopr="row") {{ type }}
                   td.text-nowrap.text-center(scope="col" v-for="player in teamA.players" :key="player") {{ _.get(teamA.playerRecord, [player, 'attacks', type], 0) }} / {{ _.get(teamA.playerRecord, [player, 'faults', type], 0) }}
         .col
-          .card
+          .card.mb-3
             .card-body(v-if="!gameOver")
               .d-flex.justify-content-center
                 h5.card-title.text-center.m-0.mr-2.d-flex.flex-column.justify-content-center {{ teamB.name }}
