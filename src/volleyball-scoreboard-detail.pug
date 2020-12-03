@@ -72,8 +72,14 @@ block content
             .card-body(v-if="!gameOver")
               .d-flex.justify-content-center
                 h5.card-title.text-center.m-0.mr-2.d-flex.flex-column.justify-content-center {{ teamA.name }}
-                button.btn.btn-outline-primary.mr-2(@click="showRecordTeamA = !showRecordTeamA") {{ showRecordTeamA ? '隱藏紀錄' : '查看紀錄' }}
-                button.btn.btn-outline-primary(@click="updatePlayer()") 球員
+                button.btn.btn-outline-primary.mr-2(
+                  v-if="teamA.players.length"
+                  @click="showRecordTeamA = !showRecordTeamA") {{ showRecordTeamA ? '隱藏紀錄' : '查看紀錄' }}
+                button.btn.btn-outline-primary(@click="editPlayerTeamA = !editPlayerTeamA") 球員
+              .d-flex.justify-content-center.mt-3(v-if="editPlayerTeamA")
+                input.form-control(type="text" placeholder="請輸入球員號碼" v-model="teamA.editPlayer")
+                button.btn.btn-outline-primary.mx-2(type="submit" @click="updatePlayer('teamA', 'add')") +
+                button.btn.btn-outline-danger(type="submit" @click="updatePlayer('teamA', 'delete')") -
               hr
               #players.mb-2
                   button.btn.btn-link(
@@ -103,8 +109,14 @@ block content
             .card-body(v-if="!gameOver")
               .d-flex.justify-content-center
                 h5.card-title.text-center.m-0.mr-2.d-flex.flex-column.justify-content-center {{ teamB.name }}
-                button.btn.btn-outline-primary.mr-2(@click="showRecordTeamB = !showRecordTeamB") {{ showRecordTeamB ? '隱藏紀錄' : '查看紀錄' }}
-                button.btn.btn-outline-primary(@click="updatePlayer()") 球員
+                button.btn.btn-outline-primary.mr-2(
+                  v-if="teamB.players.length"
+                  @click="showRecordTeamB = !showRecordTeamB") {{ showRecordTeamB ? '隱藏紀錄' : '查看紀錄' }}
+                button.btn.btn-outline-primary(@click="editPlayerTeamB = !editPlayerTeamB") 球員
+              .d-flex.justify-content-center.mt-3(v-if="editPlayerTeamB")
+                input.form-control(type="text" placeholder="請輸入球員號碼" v-model="teamB.editPlayer")
+                button.btn.btn-outline-primary.mx-2(type="submit" @click="updatePlayer('teamB', 'add')") +
+                button.btn.btn-outline-danger(type="submit" @click="updatePlayer('teamB', 'delete')") -
               hr
               #players.mb-2
                 button.btn.btn-link(
@@ -135,6 +147,8 @@ block script
     const vm = new Vue({ // eslint-disable-line no-unused-vars
       el: '#app',
       data: {
+        editPlayerTeamA: false,
+        editPlayerTeamB: false,
         gameScore: 25,
         recordPlayer: null, // 選定的球員
         scoreBoard: [], // 分數板
@@ -147,14 +161,15 @@ block script
           name: '我方',
           win: 0,
           score: 0,
-          players: ['球員1', '球員2', '球員3', '球員4', '球員5', '球員6'],
+          editPlayer: '',
+          players: [],
           playerRecord: {}, // { 17: { attacks: { 發球: 3 }, faults: { 攻擊: 2 }}}
         },
         teamB: {
           name: '敵方',
           win: 0,
           score: 0,
-          players: ['球員1', '球員2', '球員3', '球員4', '球員5', '球員6'],
+          players: [],
           playerRecord: {},
         },
         record: {
@@ -406,10 +421,39 @@ block script
                   </tbody></table></div>`,
           })
         },
-        async updatePlayer () {
+        async updatePlayer (team, action) {
+          team = team === 'teamA' ? this.teamA : this.teamB
+          if (!team.editPlayer) {
+            this.alert('錯誤', '請輸入球員號碼')
+            return
+          }
+          const pIndex = _.indexOf(team.players, team.editPlayer)
+          switch (action) {
+            case 'add':
+              if (pIndex === -1) team.players.push(team.editPlayer)
+              else this.alert('錯誤', `已存在球員「${team.editPlayer}」`)
+              break
+            case 'delete': {
+              if (pIndex !== -1) {
+                const result =  await Swal.fire({
+                  title: '注意',
+                  showCancelButton: true,
+                  cancelButtonText: '取消',
+                  confirmButtonText: '移除',
+                  text: '移除此球員，並不會清除任何與此球員相關的得失分紀錄'
+                })
+                if (result.isConfirmed) team.players.splice(pIndex, 1)
+                break
+              }
+              this.alert('錯誤', `不存在球員「${team.editPlayer}」`)
+              break
+            }
+          }
+        },
+        async alert (title, text) {
           Swal.fire({
-            title: '新增球員',
-            text: '開發中'
+            title,
+            text
           })
         },
         async nextTeamAlert (buttonText, text) {
@@ -424,7 +468,7 @@ block script
         async initAlert () {
           Swal.fire({
             title: '使用說明',
-            html: '<li>更換隊名：請點擊上方「我方 VS 敵方」</li><li>藍色按鈕為「我方得分」</li><li>黃色按鈕為「敵方得分」</li><li>灰色按鈕為「失分」</li><li>計分：請先選擇得失分隊員，再選得失分按鈕；若無選擇，則計入團隊得失分</li>'
+            html: '<div class="text-left"><li>更換隊名：請點擊上方「我方 VS 敵方」</li><li>調整隊員：請點擊「隊員」進行新增、移除</li><li>藍色按鈕為「我方得分」</li><li>黃色按鈕為「敵方得分」</li><li>灰色按鈕為「失分」</li><li>計分：請先選擇得失分隊員，再選得失分按鈕；若無選擇，則計入團隊得失分</li></div>'
           })
         },
         async showStoryRecord () {
