@@ -225,7 +225,8 @@ block script
           return { width: _.toString((score / this.gameScore) * 50) + '%' }
         },
         updateScore (team, recodeType, type) { // 得失分
-          type = type === ('攔網' || '接噴') ? '攔網/接噴' : type
+          type = (type === '攔網' || type === '接噴') ? '攔網/接噴' : type
+          console.log(type)
           this.recordPlayer = this.recordPlayer || 'team'
           this.updateRecord(team === 'teamA' ? this.teamA : this.teamB, recodeType, type)
 
