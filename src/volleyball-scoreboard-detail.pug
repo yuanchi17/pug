@@ -45,7 +45,7 @@ block content
         .progress-bar.progress-bar-striped.progress-bar-animated.bg-warning.ml-auto(role="progressbar" :style="scoreLineB") {{ teamB.score }}
     #button-group-game.d-flex.justify-content-around.mb-3(v-if="!gameOver")
       .button-group.teamA
-        button.btn.btn-primary.mr-1(@click="winScore('teamA', '其他')") 得分
+        button.btn.btn-primary.mr-1(@click="updateScore('teamA', 'attacks', '其他')") 得分
       .button-group.d-flex.flex-column.justify-content-center
         button.btn.btn-outline-danger.mb-2(
           v-if="teamA.score === 0 && teamB.score === 0" 
@@ -53,7 +53,7 @@ block content
         button.btn.btn-outline-danger.mb-2(v-else @click="subScore()") 回上一分
         button.btn.btn-outline-danger(@click="init()") 重新計分
       .button-group.teamB
-        button.btn.btn-warning.mr-1(@click="winScore('teamB', '其他')") 得分
+        button.btn.btn-warning.mr-1(@click="updateScore('teamB', 'attacks', '其他')") 得分
     #button-group-gameover.d-flex.justify-content-around.mb-3(v-else)
       button.btn.btn-outline-primary(@click="init()") 再比一局
       button.btn.btn-outline-success(v-if="storyRecords" @click="showStoryRecord()") 總紀錄
@@ -65,76 +65,72 @@ block content
           th.text-nowrap(scopr="row") {{ team === 'A' ? teamA.name : teamB.name }}
           td(v-for="(score, index) in scoreBoard" :key="index") {{ score[team] }}
 
-    #record(v-if="!gameOver")
+    #record
       .row
         .col
           .card.mb-3
-            .card-body
+            .card-body(v-if="!gameOver")
               .d-flex.justify-content-center
                 h5.card-title.text-center.m-0.mr-2.d-flex.flex-column.justify-content-center {{ teamA.name }}
-                button.btn.btn-outline-primary.mr-2(@click="showRecordTeamA = !showRecordTeamA") 紀錄
-                button.btn.btn-outline-primary(@click="球員") 球員
+                button.btn.btn-outline-primary.mr-2(@click="showRecordTeamA = !showRecordTeamA") {{ showRecordTeamA ? '隱藏紀錄' : '查看紀錄' }}
+                button.btn.btn-outline-primary(@click="updatePlayer()") 球員
               hr
-              #players(v-for="player in teamA.players" :key="player")
-              .d-flex.justify-content-around.mb-2
-                button.btn.btn-link.player-btn(
-                  @click="recordPlayer = player"
-                  v-for="player in teamA.players" :key="player") {{ player }}
+              #players.mb-2
+                  button.btn.btn-link(
+                    @click="recordPlayer = player"
+                    v-for="player in teamA.players" :key="player") {{ player }}
               .d-flex.justify-content-around.mb-2
                 button.btn.player-btn.btn-primary(
-                  @click="winScore('teamA', type)"
+                  @click="updateScore('teamA', 'attacks', type)"
                   v-for="type in record.attacks" :key="type") {{ type }}
               .d-flex.justify-content-around
                 button.btn.btn-secondary.player-btn(
-                  @click="lossScore('teamA', type)"
+                  @click="updateScore('teamA', 'faults', type)"
                   v-for="type in record.faults" :key="type") {{ type }}
 
             //- 我方球員紀錄
             table.table.table-bordered.table-responsive.m-0.player-record(v-if="showRecordTeamA && teamA.players.length")
               thead
                 tr
-                  th.text-nowrap(scope="col") 得分/失誤
-                  th.text-center(scope="col" v-for="player in teamA.players" :key="player") {{ player }}
+                  th.text-nowrap(scope="col") {{ teamA.name }}球員紀錄
+                  th.text-nowrap.text-center(scope="col" v-for="player in teamA.players" :key="player") {{ player }}
               tbody
                 tr(v-for="(type, index) in ['發球', '攻擊', '攔網/接噴', '其他']" :key="type")
                   th(scopr="row") {{ type }}
-                  td.text-nowrap(scope="col" v-for="player in teamA.players" :key="player") {{ _.get(teamA.playerRecord, [player, 'attacks', type], 0) }} / {{ _.get(teamA.playerRecord, [player, 'faults', type], 0) }}
+                  td.text-nowrap.text-center(scope="col" v-for="player in teamA.players" :key="player") {{ _.get(teamA.playerRecord, [player, 'attacks', type], 0) }} / {{ _.get(teamA.playerRecord, [player, 'faults', type], 0) }}
         .col
           .card
-            .card-body
+            .card-body(v-if="!gameOver")
               .d-flex.justify-content-center
                 h5.card-title.text-center.m-0.mr-2.d-flex.flex-column.justify-content-center {{ teamB.name }}
-                button.btn.btn-outline-primary.mr-2(@click="showRecordTeamB = !showRecordTeamB") 紀錄
-                button.btn.btn-outline-primary(@click="球員") 球員
+                button.btn.btn-outline-primary.mr-2(@click="showRecordTeamB = !showRecordTeamB") {{ showRecordTeamB ? '隱藏紀錄' : '查看紀錄' }}
+                button.btn.btn-outline-primary(@click="updatePlayer()") 球員
               hr
-              #players(v-for="player in teamB.players" :key="player")
-              .d-flex.justify-content-around.mb-2
-                button.btn.btn-link.player-btn(
+              #players.mb-2
+                button.btn.btn-link(
                   @click="recordPlayer = player"
                   v-for="player in teamB.players" :key="player") {{ player }}
               .d-flex.justify-content-around.mb-2
                 button.btn.player-btn.btn-warning(
-                  @click="winScore('teamB', type)"
+                  @click="updateScore('teamB', 'attacks', type)"
                   v-for="type in record.attacks" :key="type") {{ type }}
               .d-flex.justify-content-around
                 button.btn.btn-secondary.player-btn(
-                  @click="lossScore('teamB', type)"
+                  @click="updateScore('teamB', 'faults', type)"
                   v-for="type in record.faults" :key="type") {{ type }}
             //- 敵方球員紀錄
             table.table.table-bordered.table-responsive.m-0.player-record(v-if="showRecordTeamB && teamB.players.length")
               thead
                 tr
-                  th.text-nowrap(scope="col") 得分/失誤
-                  th.text-center(scope="col" v-for="player in teamB.players" :key="player") {{ player }}
+                  th.text-nowrap(scope="col") {{ teamB.name }}球員紀錄
+                  th.text-nowrap.text-center(scope="col" v-for="player in teamB.players" :key="player") {{ player }}
               tbody
                 tr(v-for="(type, index) in ['發球', '攻擊', '攔網/接噴', '其他']" :key="type")
                   th(scopr="row") {{ type }}
-                  td.text-nowrap(scope="col" v-for="player in teamB.players" :key="player") {{ _.get(teamB.playerRecord, [player, 'attacks', type], 0) }} / {{ _.get(teamB.playerRecord, [player, 'faults', type], 0) }}
+                  td.text-nowrap.text-center(scope="col" v-for="player in teamB.players" :key="player") {{ _.get(teamB.playerRecord, [player, 'attacks', type], 0) }} / {{ _.get(teamB.playerRecord, [player, 'faults', type], 0) }}
 
 block script
   script.
-    // TODO 使用規則： 1.灰色按鈕為"失分" 2.請先選擇得失分隊員，再進行計分，若無選擇，則直接計入團隊得失分
-
     const GAME_SCORE = 25 // 比賽分數
     const vm = new Vue({ // eslint-disable-line no-unused-vars
       el: '#app',
@@ -151,14 +147,14 @@ block script
           name: '我方',
           win: 0,
           score: 0,
-          players: [17, 54, 18, 15, 2, 1],
+          players: ['球員1', '球員2', '球員3', '球員4', '球員5', '球員6'],
           playerRecord: {}, // { 17: { attacks: { 發球: 3 }, faults: { 攻擊: 2 }}}
         },
         teamB: {
           name: '敵方',
           win: 0,
           score: 0,
-          players: [1 ,2 ,3 ,4 ,5 ,6],
+          players: ['球員1', '球員2', '球員3', '球員4', '球員5', '球員6'],
           playerRecord: {},
         },
         record: {
@@ -167,6 +163,7 @@ block script
         },
       },
       mounted () {
+        this.initAlert()
         this.init()
       },
       computed: {
@@ -190,8 +187,9 @@ block script
           if (status) {
             (scoreA > scoreB) ? this.teamA.win += 1 : this.teamB.win += 1
             this.scoreBoard = _.filter(this.scoreBoard, s => (s.A !== '' || s.B !== ''))
-            console.log(this.teamA)
             this.grades()
+            this.showRecordTeamA = true
+            this.showRecordTeamB = true
           }
           return status
         },
@@ -207,27 +205,32 @@ block script
             t.playerRecord = {}
           })
 
-          this.storyRecords = JSON.parse(localStorage.getItem('scoreboard')) || []
+          this.storyRecords = JSON.parse(localStorage.getItem('scoreboard-detail')) || []
         },
-        nextTeam () {
+        async nextTeam (type) {
+          let buttonText = '下一隊'
+          let text = '選擇「下一隊」，之前的總紀錄都會消失！你可以先至「總紀錄」截圖保存，再繼續下一隊的比賽。'
+
+          if (type === '清除紀錄') {
+            buttonText = '清除'
+            text = '清除紀錄後將無法挽回！'
+          }
+          const result = await this.nextTeamAlert(buttonText, text)
+          if (!result.isConfirmed) return
           [this.teamA.win, this.teamB.win] = [0, 0]
-          localStorage.removeItem('scoreboard')
+          localStorage.removeItem('scoreboard-detail')
           this.init()
         },
         getLineWidth (score) {
           return { width: _.toString((score / this.gameScore) * 50) + '%' }
         },
-        winScore (team, type) { // 得分
-          type = type === '攔網' ? '攔網/接噴' : type
+        updateScore (team, recodeType, type) { // 得失分
+          type = type === ('攔網' || '接噴') ? '攔網/接噴' : type
           this.recordPlayer = this.recordPlayer || 'team'
-          this.updateRecord(team === 'teamA' ? this.teamA : this.teamB, 'attacks', type)
-          this.addScore(team, `attacks.${type}`)
-        },
-        lossScore (team, type) { // 失分
-          type = type === '接噴' ? '攔網/接噴' : type
-          this.recordPlayer = this.recordPlayer || 'team'
-          this.updateRecord(team === 'teamA' ? this.teamA : this.teamB, 'faults', type)
-          this.addScore(team === 'teamA' ? 'teamB' : 'teamA', `faults.${type}`)
+          this.updateRecord(team === 'teamA' ? this.teamA : this.teamB, recodeType, type)
+
+          if (recodeType === 'faults') team = team === 'teamA' ? 'teamB' : 'teamA'
+          this.addScore(team, `${recodeType}.${type}`)
         },
         updateRecord (team, recodeType, type) { // 更新紀錄
           _.update(team, ['playerRecord', this.recordPlayer, recodeType, type], n => { return n ? n + 1 : 1 })
@@ -356,7 +359,7 @@ block script
               faultSum: [..._.get(this.storyRecords, 'tBDetail.faultSum', []), _.sum(_.values(tB.faultScore))],
             },
           }
-          localStorage.setItem('scoreboard', JSON.stringify(this.storyRecords))
+          localStorage.setItem('scoreboard-detail', JSON.stringify(this.storyRecords))
 
           Swal.fire({
             html: `<div class="table-responsive">
@@ -400,6 +403,27 @@ block script
                     <td>${_.sum(_.values(tA.faultScore))}</td>
                   </tr>
                   </tbody></table></div>`,
+          })
+        },
+        async updatePlayer () {
+          Swal.fire({
+            title: '新增球員',
+            text: '開發中'
+          })
+        },
+        async nextTeamAlert (buttonText, text) {
+          return await Swal.fire({
+            title: '注意',
+            showCancelButton: true,
+            cancelButtonText: '先去截圖',
+            confirmButtonText: buttonText,
+            text
+          })
+        },
+        async initAlert () {
+          Swal.fire({
+            title: '使用說明',
+            html: '<li>更換隊名：請點擊上方「我方 VS 敵方」</li><li>藍色按鈕為「我方得分」</li><li>黃色按鈕為「敵方得分」</li><li>灰色按鈕為「失分」</li><li>計分：請先選擇得失分隊員，再選得失分按鈕；若無選擇，則計入團隊得失分</li>'
           })
         },
         async showStoryRecord () {
@@ -479,7 +503,7 @@ block script
                   </tr>
                   </tbody></table></div>`,
           })
-          if (result.isConfirmed) this.nextTeam()
+          if (result.isConfirmed) this.nextTeam('清除紀錄')
         },
       },
     })

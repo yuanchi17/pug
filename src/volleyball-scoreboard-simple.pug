@@ -167,12 +167,12 @@ block script
             })
           })
 
-          const storyRecords = JSON.parse(localStorage.getItem('scoreboard'))
+          const storyRecords = JSON.parse(localStorage.getItem('scoreboard-simple'))
           this.storyRecords = storyRecords || []
         },
         nextTeam () {
           [this.teamA.win, this.teamB.win] = [0, 0]
-          localStorage.removeItem('scoreboard')
+          localStorage.removeItem('scoreboard-simple')
           this.init()
         },
         getLineWidth (score) {
@@ -263,7 +263,7 @@ block script
               teamB: [..._.get(this.storyRecords, 'faults.teamA', []), faultB],
             },
           }
-          localStorage.setItem('scoreboard', JSON.stringify(this.storyRecords))
+          localStorage.setItem('scoreboard-simple', JSON.stringify(this.storyRecords))
 
           Swal.fire({
             html: `<div class="table-responsive">
