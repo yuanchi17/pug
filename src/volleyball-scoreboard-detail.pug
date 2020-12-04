@@ -43,17 +43,12 @@ block content
       .progress
         .progress-bar.progress-bar-striped.progress-bar-animated(role="progressbar" :style="scoreLineA") {{ teamA.score }}
         .progress-bar.progress-bar-striped.progress-bar-animated.bg-warning.ml-auto(role="progressbar" :style="scoreLineB") {{ teamB.score }}
-    #button-group-game.d-flex.justify-content-around.mb-3(v-if="!gameOver")
-      .button-group.teamA
-        button.btn.btn-primary.mr-1(@click="updateScore('teamA', 'attacks', '其他')") 得分
-      .button-group.d-flex.flex-column.justify-content-center
-        button.btn.btn-outline-danger.mb-2(
-          v-if="teamA.score === 0 && teamB.score === 0" 
-          @click="gameScore -= 1") 減少比分（{{this.gameScore}}）
-        button.btn.btn-outline-danger.mb-2(v-else @click="subScore()") 回上一分
-        button.btn.btn-outline-danger(@click="init()") 重新計分
-      .button-group.teamB
-        button.btn.btn-warning.mr-1(@click="updateScore('teamB', 'attacks', '其他')") 得分
+    #button-group-game.d-flex.justify-content-center.mb-3(v-if="!gameOver")
+      button.btn.btn-outline-danger.mr-2(
+        v-if="teamA.score === 0 && teamB.score === 0" 
+        @click="gameScore -= 1") 減少比分（{{this.gameScore}}）
+      button.btn.btn-outline-danger.mr-2(v-else @click="subScore()") 回上一分
+      button.btn.btn-outline-danger(@click="init()") 重新計分
     #button-group-gameover.d-flex.justify-content-around.mb-3(v-else)
       button.btn.btn-outline-primary(@click="init()") 再比一局
       button.btn.btn-outline-success(v-if="storyRecords" @click="showStoryRecord()") 總紀錄
@@ -67,9 +62,9 @@ block content
 
     #record
       .row
-        .col(v-if="!gameOver || showRecordTeamA")
+        .col(v-if="!gameOver || (showRecordTeamA && teamA.players.length)")
           .card.mb-3
-            .card-body
+            .card-body(v-if="!gameOver")
               .d-flex.justify-content-center
                 h5.card-title.text-center.m-0.mr-2.d-flex.flex-column.justify-content-center {{ teamA.name }}
                 button.btn.btn-outline-primary.mr-2(
@@ -104,9 +99,9 @@ block content
                 tr(v-for="(type, index) in ['發球', '攻擊', '攔網/接噴', '其他']" :key="type")
                   th(scopr="row") {{ type }}
                   td.text-nowrap.text-center(scope="col" v-for="player in teamA.players" :key="player") {{ _.get(teamA.playerRecord, [player, 'attacks', type], 0) }} / {{ _.get(teamA.playerRecord, [player, 'faults', type], 0) }}
-        .col(v-if="!gameOver || showRecordTeamA")
+        .col(v-if="!gameOver || (showRecordTeamB && teamB.players.length)")
           .card.mb-3
-            .card-body
+            .card-body(v-if="!gameOver")
               .d-flex.justify-content-center
                 h5.card-title.text-center.m-0.mr-2.d-flex.flex-column.justify-content-center {{ teamB.name }}
                 button.btn.btn-outline-primary.mr-2(
@@ -191,19 +186,19 @@ block script
         gameOver () {
           const scoreA = this.teamA.score
           const scoreB = this.teamB.score
-          const over = (scoreA === this.gameScore || scoreB === this.gameScore)
-          const duce = (Math.abs(scoreA - scoreB) === 2)
-          const status = (over && duce) // true: 比賽結束
-    
-          if (over && !duce) this.gameScore += 1
-          if (status) {
+          const la = (scoreA === this.gameScore || scoreB === this.gameScore)
+          const duce = (la && Math.abs(scoreA - scoreB) === 1)
+          const over = (la && Math.abs(scoreA - scoreB) !== 1) // true: 比賽結束
+
+          if (duce) this.gameScore += 1
+          if (over) {
             (scoreA > scoreB) ? this.teamA.win += 1 : this.teamB.win += 1
             this.scoreBoard = _.filter(this.scoreBoard, s => (s.A !== '' || s.B !== ''))
             this.grades()
             this.showRecordTeamA = true
             this.showRecordTeamB = true
           }
-          return status
+          return over
         },
       },
       methods: {
@@ -238,11 +233,7 @@ block script
         updateScore (team, recodeType, type) { // 得失分
           type = (type === '攔網' || type === '接噴') ? '攔網/接噴' : type
           this.updateRecord(team === 'teamA' ? this.teamA : this.teamB, recodeType, type)
-
-          // if A 隊失誤，應該是 B 隊加分
-          if (recodeType === 'faults') team = team === 'teamA' ? 'teamB' : 'teamA'
-          team === 'teamA' ? this.teamA.score += 1 : this.teamB.score += 1
-          this.updateScoreBoard(team)
+          this.updateScoreBoard(team, recodeType)
 
           // 更新紀錄
           const player = this.recordPlayer || 'team'
@@ -257,7 +248,11 @@ block script
           _.update(team, ['playerRecord', this.recordPlayer, recodeType, type], n => { return n ? n + 1 : 1 })
           team = Object.assign({}, team)
         },
-        updateScoreBoard (team = '') {
+        updateScoreBoard (team, recodeType) {
+          // if A 隊失誤，應該是 B 隊加分
+          if (recodeType === 'faults') team = team === 'teamA' ? 'teamB' : 'teamA'
+          if (recodeType !== 'sub') team === 'teamA' ? this.teamA.score += 1 : this.teamB.score += 1
+
           const index = this.teamA.score + this.teamB.score - 1
           _.update(this.scoreBoard, [index, 'A'], s => { return team === 'teamA' ? this.teamA.score : '' })
           _.update(this.scoreBoard, [index, 'B'], s => { return team === 'teamB' ? this.teamB.score : '' })
@@ -267,14 +262,13 @@ block script
           const index = this.teamA.score + this.teamB.score - 1
           const lastScore = this.scoreOrder.pop() // { team: 'teamA', type: 'attacks.攻擊', player: 17}
           const lastTeamIsTeamA = lastScore.team === 'teamA'
-
+          const lastType = _.split(lastScore.type, '.')[0]
           let lastTeam = team = lastTeamIsTeamA ? this.teamA : this.teamB
-          if (_.split(lastScore.type, '.')[0] === 'faults') lastTeam = lastTeamIsTeamA ? this.teamB : this.teamA
 
           _.update(lastTeam, ['playerRecord', lastScore.player, ...(lastScore.type.split('.'))], n => { return n - 1 })
           lastTeam = Object.assign({}, lastTeam)
-          this.updateScoreBoard()
-          lastTeamIsTeamA ? this.teamA.score -= 1 : this.teamB.score -= 1
+          this.updateScoreBoard('', 'sub')
+          lastTeamIsTeamA && lastType !== 'faults' ? this.teamA.score -= 1 : this.teamB.score -= 1
         },
         async changeName () {
           const { value: teamAName } = await Swal.fire({
@@ -342,7 +336,14 @@ block script
             })
           })
 
-          // 儲存每次的紀錄 TODO: 優化
+          const storyRecordsVal = _.map(this.record, recodeType => {
+            let t = recodeType === 'attacks'? 'attackScore' :'faultScore'
+            const a = _.zipObject(recodeType, _.map(recodeType, type => { return [..._.get(this.storyRecords, `tADetail.${t}.${type}`, []), tA[t][type]] }))
+            const b = _.zipObject(recodeType, _.map(recodeType, type => { return [..._.get(this.storyRecords, `tBDetail.${t}.${type}`, []), tB[t][type]] }))
+            return {tA: a, tB: b}
+          })
+          const newStoryRecords = _.zipObject(['attacks', 'faults'], storyRecordsVal)
+          // 儲存每次的紀錄
           this.storyRecords = {
             teamA: this.teamA.name,
             teamB: this.teamB.name,
@@ -351,25 +352,13 @@ block script
               teamB: [..._.get(this.storyRecords, 'score.teamB', []), this.teamB.score],
             },
             tADetail: {
-              attackScore: _.zipObject(
-                this.record.attacks,
-                _.map(this.record.attacks, type => { return [..._.get(this.storyRecords, `tADetail.attackScore.${type}`, []), tA.attackScore[type]] })
-              ),
-              faultScore: _.zipObject(
-                this.record.faults,
-                _.map(this.record.faults, type => { return [..._.get(this.storyRecords, `tADetail.faultScore.${type}`, []), tA.faultScore[type]] })
-              ),
+              attackScore: newStoryRecords['attacks'].tA,
+              faultScore: newStoryRecords['faults'].tA,
               faultSum: [..._.get(this.storyRecords, 'tADetail.faultSum', []), _.sum(_.values(tA.faultScore))],
             },
             tBDetail: {
-              attackScore: _.zipObject(
-                this.record.attacks,
-                _.map(this.record.attacks, type => { return [..._.get(this.storyRecords, `tBDetail.attackScore.${type}`, []), tB.attackScore[type]] })
-              ),
-              faultScore: _.zipObject(
-                this.record.faults,
-                _.map(this.record.faults, type => { return [..._.get(this.storyRecords, `tBDetail.faultScore.${type}`, []), tB.faultScore[type]] })
-              ),
+              attackScore: newStoryRecords['attacks'].tB,
+              faultScore: newStoryRecords['faults'].tB,
               faultSum: [..._.get(this.storyRecords, 'tBDetail.faultSum', []), _.sum(_.values(tB.faultScore))],
             },
           }
@@ -425,28 +414,26 @@ block script
             this.alert('錯誤', '請輸入球員號碼')
             return
           }
+          if (action === 'add') this.addPlayer(team)
+          else this.deletePlayer(team)
+        },
+        async addPlayer (team) {
           const pIndex = _.indexOf(team.players, team.editPlayer)
-          // TODO: 優化
-          switch (action) {
-            case 'add':
-              if (pIndex === -1) team.players.push(team.editPlayer)
-              else this.alert('錯誤', `已存在球員「${team.editPlayer}」`)
-              break
-            case 'delete': {
-              if (pIndex !== -1) {
-                const result =  await Swal.fire({
-                  title: '注意',
-                  showCancelButton: true,
-                  cancelButtonText: '取消',
-                  confirmButtonText: '移除',
-                  text: '移除此球員，並不會清除任何與此球員相關的得失分紀錄'
-                })
-                if (result.isConfirmed) team.players.splice(pIndex, 1)
-                break
-              }
-              this.alert('錯誤', `不存在球員「${team.editPlayer}」`)
-              break
-            }
+          if (pIndex !== -1) this.alert('錯誤', `已存在球員「${team.editPlayer}」`)
+          else team.players.push(team.editPlayer)
+        },
+        async deletePlayer (team) {
+          const pIndex = _.indexOf(team.players, team.editPlayer)
+          if (pIndex === -1) this.alert('錯誤', `不存在球員「${team.editPlayer}」`)
+          else {
+              const result = await Swal.fire({
+              title: '注意',
+              showCancelButton: true,
+              cancelButtonText: '取消',
+              confirmButtonText: '移除',
+              text: '移除此球員，並不會清除任何與此球員相關的得失分紀錄'
+            })
+            if (result.isConfirmed) team.players.splice(pIndex, 1)
           }
         },
         async alert (title, text) {
