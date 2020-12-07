@@ -336,10 +336,10 @@ block script
             })
           })
 
-          const storyRecordsVal = _.map(this.record, recodeType => {
-            let t = recodeType === 'attacks'? 'attackScore' :'faultScore'
-            const a = _.zipObject(recodeType, _.map(recodeType, type => { return [..._.get(this.storyRecords, `tADetail.${t}.${type}`, []), tA[t][type] || 0] }))
-            const b = _.zipObject(recodeType, _.map(recodeType, type => { return [..._.get(this.storyRecords, `tBDetail.${t}.${type}`, []), tB[t][type] || 0] }))
+          const storyRecordsVal = _.map(this.record, (recodeType, key) => {
+            let t = key === 'attacks'? 'attackScore' :'faultScore'
+            const a = _.zipObject(recodeType, _.map(recodeType, type => { return [..._.get(this.storyRecords, `tADetail.${t}.${type}`, []), tA[t][type]] }))
+            const b = _.zipObject(recodeType, _.map(recodeType, type => { return [..._.get(this.storyRecords, `tBDetail.${t}.${type}`, []), tB[t][type]] }))
             return {tA: a, tB: b}
           })
           const newStoryRecords = _.zipObject(['attacks', 'faults'], storyRecordsVal)
@@ -381,14 +381,14 @@ block script
                     <td>${this.teamB.score}</td>
                   </tr>
                   <tr>
-                    <td>${tA.attackScore['攻擊']}</td>
-                    <th scope="row">攻擊得分</th>
-                    <td>${tB.attackScore['攻擊']}</td>
-                  </tr>
-                  <tr>
                     <td>${tA.attackScore['發球']}</td>
                       <th scope="row">發球得分</th>
                     <td>${tB.attackScore['發球']}</td>
+                  </tr>
+                  <tr>
+                    <td>${tA.attackScore['攻擊']}</td>
+                    <th scope="row">攻擊得分</th>
+                    <td>${tB.attackScore['攻擊']}</td>
                   </tr>
                   <tr>
                     <td>${tA.attackScore['攔網']}</td>
@@ -478,14 +478,14 @@ block script
                     <td>${this.storyRecords.score.teamB.join(' / ')}</td>
                   </tr>
                   <tr>
-                    <td>${this.storyRecords.tADetail.attackScore['攻擊'].join(' / ')}</td>
-                    <th scope="row">攻擊</th>
-                    <td>${this.storyRecords.tBDetail.attackScore['攻擊'].join(' / ')}</td>
-                  </tr>
-                  <tr>
                     <td>${this.storyRecords.tADetail.attackScore['發球'].join(' / ')}</td>
                       <th scope="row">發球</th>
                     <td>${this.storyRecords.tBDetail.attackScore['發球'].join(' / ')}</td>
+                  </tr>
+                  <tr>
+                    <td>${this.storyRecords.tADetail.attackScore['攻擊'].join(' / ')}</td>
+                    <th scope="row">攻擊</th>
+                    <td>${this.storyRecords.tBDetail.attackScore['攻擊'].join(' / ')}</td>
                   </tr>
                   <tr>
                     <td>${this.storyRecords.tADetail.attackScore['攔網'].join(' / ')}</td>
@@ -513,14 +513,14 @@ block script
                 </thead>
                 <tbody>
                   <tr>
-                    <td>${this.storyRecords.tADetail.faultScore['攻擊'].join(' / ')}</td>
-                    <th scope="row">攻擊</th>
-                    <td>${this.storyRecords.tBDetail.faultScore['攻擊'].join(' / ')}</td>
-                  </tr>
-                  <tr>
                     <td>${this.storyRecords.tADetail.faultScore['發球'].join(' / ')}</td>
                       <th scope="row">發球</th>
                     <td>${this.storyRecords.tBDetail.faultScore['發球'].join(' / ')}</td>
+                  </tr>
+                  <tr>
+                    <td>${this.storyRecords.tADetail.faultScore['攻擊'].join(' / ')}</td>
+                    <th scope="row">攻擊</th>
+                    <td>${this.storyRecords.tBDetail.faultScore['攻擊'].join(' / ')}</td>
                   </tr>
                   <tr>
                     <td>${this.storyRecords.tADetail.faultScore['接噴'].join(' / ')}</td>
