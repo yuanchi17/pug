@@ -49,6 +49,7 @@ block content
         @click="gameScore -= 1") 減少比分（{{this.gameScore}}）
       button.btn.btn-outline-danger.mr-2(v-else @click="subScore()") 回上一分
       button.btn.btn-outline-danger(@click="init()") 重新計分
+      button.btn.btn-outline-success.ml-2(v-if="storyRecords && teamA.score === 0 && teamB.score === 0" @click="showStoryRecord()") 總紀錄
     #button-group-gameover.d-flex.justify-content-around.mb-3(v-else)
       button.btn.btn-outline-primary(@click="init()") 再比一局
       button.btn.btn-outline-success(v-if="storyRecords" @click="showStoryRecord()") 總紀錄
@@ -151,7 +152,7 @@ block script
         showRecordTeamA: false,
         showRecordTeamB: false,
         showScoreBoard: true,
-        storyRecords: [], // 總紀錄
+        storyRecords: null, // 總紀錄
         teamA: {
           name: '我方',
           win: 0,
@@ -211,7 +212,7 @@ block script
             t.playerRecord = {}
           })
 
-          this.storyRecords = JSON.parse(localStorage.getItem('scoreboard-detail')) || []
+          this.storyRecords = JSON.parse(localStorage.getItem('scoreboard-detail')) || null
         },
         async nextTeam (type) {
           let buttonText = '下一隊'
