@@ -338,8 +338,8 @@ block script
 
           const storyRecordsVal = _.map(this.record, recodeType => {
             let t = recodeType === 'attacks'? 'attackScore' :'faultScore'
-            const a = _.zipObject(recodeType, _.map(recodeType, type => { return [..._.get(this.storyRecords, `tADetail.${t}.${type}`, []), tA[t][type]] }))
-            const b = _.zipObject(recodeType, _.map(recodeType, type => { return [..._.get(this.storyRecords, `tBDetail.${t}.${type}`, []), tB[t][type]] }))
+            const a = _.zipObject(recodeType, _.map(recodeType, type => { return [..._.get(this.storyRecords, `tADetail.${t}.${type}`, []), tA[t][type] || 0] }))
+            const b = _.zipObject(recodeType, _.map(recodeType, type => { return [..._.get(this.storyRecords, `tBDetail.${t}.${type}`, []), tB[t][type] || 0] }))
             return {tA: a, tB: b}
           })
           const newStoryRecords = _.zipObject(['attacks', 'faults'], storyRecordsVal)
