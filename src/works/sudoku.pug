@@ -1,4 +1,4 @@
-extends layout
+extends ../layout
 
 block beforehtml
   - const title = '數獨'
@@ -18,7 +18,7 @@ block style
           height: 55px
 
 block content
-  include /navbar
+  include ../navbar
   #app.content.p-3.d-flex.flex-column.align-items-center
     .card.bg-light.mb-3
       h2.card-header.text-center 數獨

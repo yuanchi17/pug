@@ -1,4 +1,4 @@
-extends layout
+extends ../layout
 
 block beforehtml
   - const title = '作品集'
@@ -39,7 +39,7 @@ block style
       
 
 block content
-  include /navbar
+  include ../navbar
   #app.content.container.p-3(v-cloak)
     .d-flex.align-items-center.mb-3
       img.mr-3(src="https://i.imgur.com/FU5VL1T.png")
