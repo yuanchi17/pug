@@ -17,7 +17,7 @@ async function main () {
   log('build finsh')
 
   const publicDir = path.resolve(__dirname, 'dist') // C:\Users\Joyce\Desktop\Yuan\pug\dist
-  const baseUrl = getenv('BASEURL', 'https://lyccccc17.github.io/pug/')
+  const baseUrl = getenv('BASEURL', 'https://yuanchi17.github.io/pug/')
 
   const livereloadServer = livereload.createServer({
     delay: 500,

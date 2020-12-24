@@ -26,7 +26,7 @@ function getenv (key, defaultval) {
 exports.build = async () => {
   const PUG_OPTIONS = {
     basedir: path.resolve(__dirname, 'src'),
-    baseUrl: getenv('BASEURL', 'https://lyccccc17.github.io/pug/'),
+    baseUrl: getenv('BASEURL', 'https://yuanchi17.github.io/pug/'),
     GA_MEASUREMENT_ID: getenv('GA_MEASUREMENT_ID', 'UA-164526128-1'),
     NODE_ENV: getenv('NODE_ENV', 'production'),
   }

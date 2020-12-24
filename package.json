@@ -2,7 +2,7 @@
   "name": "pug",
   "version": "1.0.0",
   "main": "index.js",
-  "repository": "https://github.com/lyccccc17/pug.git",
+  "repository": "https://github.com/yuanchi17/pug.git",
   "license": "MIT",
   "scripts": {
     "build": "cross-env DEBUG=app:* node ./index.js",
