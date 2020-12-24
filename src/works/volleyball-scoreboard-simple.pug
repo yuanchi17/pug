@@ -1,4 +1,4 @@
-extends ../../layout
+extends ../layout
 
 block beforehtml
   - const title = '排球記分板'
@@ -29,7 +29,7 @@ block style
             height: 30px
 
 block content
-  include ../../navbar
+  include ../navbar
   #app.container.pt-3(v-cloak)
     h3.text-center(@click="changeName") {{ teamA.name }}　VS　{{ teamB.name }}
     h3.text-center {{ teamA.win }}：{{ teamB.win }}
