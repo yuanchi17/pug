@@ -241,7 +241,7 @@ block script
           this.scoreOrder.push({
             team,
             type: `${recodeType}.${type}`,
-            player
+            player,
           })
           this.recordPlayer = null
         },
@@ -260,11 +260,10 @@ block script
           this.scoreBoard = Object.assign({}, this.scoreBoard)
         },
         subScore () { // 扣分，回上一步
-          const index = this.teamA.score + this.teamB.score - 1
           const lastScore = this.scoreOrder.pop() // { team: 'teamA', type: 'attacks.攻擊', player: 17}
           const lastTeamIsTeamA = lastScore.team === 'teamA'
           const lastType = _.split(lastScore.type, '.')[0]
-          let lastTeam = team = lastTeamIsTeamA ? this.teamA : this.teamB
+          let lastTeam = lastTeamIsTeamA ? this.teamA : this.teamB
 
           _.update(lastTeam, ['playerRecord', lastScore.player, ...(lastScore.type.split('.'))], n => { return n - 1 })
           lastTeam = Object.assign({}, lastTeam)
@@ -273,22 +272,20 @@ block script
         },
         async changeName () {
           const { value: teamAName } = await Swal.fire({
-            title: '更改我方隊名',
-            input: 'text',
-            showCancelButton: true,
             cancelButtonText: '取消',
             confirmButtonText: '確定',
+            input: 'text',
             inputValue: this.teamA.name,
             showCancelButton: true,
+            title: '更改我方隊名',
           })
           const { value: teamBName } = await Swal.fire({
-            title: '更改敵方隊名',
-            input: 'text',
-            showCancelButton: true,
             cancelButtonText: '取消',
             confirmButtonText: '確定',
+            input: 'text',
             inputValue: this.teamB.name,
             showCancelButton: true,
+            title: '更改敵方隊名',
           })
           this.teamA.name = teamAName || this.teamA.name
           this.teamB.name = teamBName || this.teamB.name
@@ -338,10 +335,10 @@ block script
           })
 
           const storyRecordsVal = _.map(this.record, (recodeType, key) => {
-            let t = key === 'attacks'? 'attackScore' :'faultScore'
+            const t = key === 'attacks' ? 'attackScore' : 'faultScore'
             const a = _.zipObject(recodeType, _.map(recodeType, type => { return [..._.get(this.storyRecords, `tADetail.${t}.${type}`, []), tA[t][type]] }))
             const b = _.zipObject(recodeType, _.map(recodeType, type => { return [..._.get(this.storyRecords, `tBDetail.${t}.${type}`, []), tB[t][type]] }))
-            return {tA: a, tB: b}
+            return { tA: a, tB: b }
           })
           const newStoryRecords = _.zipObject(['attacks', 'faults'], storyRecordsVal)
           // 儲存每次的紀錄
@@ -353,13 +350,13 @@ block script
               teamB: [..._.get(this.storyRecords, 'score.teamB', []), this.teamB.score],
             },
             tADetail: {
-              attackScore: newStoryRecords['attacks'].tA,
-              faultScore: newStoryRecords['faults'].tA,
+              attackScore: newStoryRecords.attacks.tA,
+              faultScore: newStoryRecords.faults.tA,
               faultSum: [..._.get(this.storyRecords, 'tADetail.faultSum', []), _.sum(_.values(tA.faultScore))],
             },
             tBDetail: {
-              attackScore: newStoryRecords['attacks'].tB,
-              faultScore: newStoryRecords['faults'].tB,
+              attackScore: newStoryRecords.attacks.tB,
+              faultScore: newStoryRecords.faults.tB,
               faultSum: [..._.get(this.storyRecords, 'tBDetail.faultSum', []), _.sum(_.values(tB.faultScore))],
             },
           }
@@ -427,12 +424,12 @@ block script
           const pIndex = _.indexOf(team.players, team.editPlayer)
           if (pIndex === -1) this.alert('錯誤', `不存在球員「${team.editPlayer}」`)
           else {
-              const result = await Swal.fire({
+            const result = await Swal.fire({
               title: '注意',
               showCancelButton: true,
               cancelButtonText: '取消',
               confirmButtonText: '移除',
-              text: '移除此球員，並不會清除任何與此球員相關的得失分紀錄'
+              text: '移除此球員，並不會清除任何與此球員相關的得失分紀錄',
             })
             if (result.isConfirmed) team.players.splice(pIndex, 1)
           }
@@ -440,7 +437,7 @@ block script
         async alert (title, text) {
           Swal.fire({
             title,
-            text
+            text,
           })
         },
         async nextTeamAlert (buttonText, text) {
@@ -449,13 +446,13 @@ block script
             showCancelButton: true,
             cancelButtonText: '先去截圖',
             confirmButtonText: buttonText,
-            text
+            text,
           })
         },
         async useAlert () {
           Swal.fire({
             title: '使用說明',
-            html: '<div class="text-left"><li>更換隊名：請點擊上方「我方 VS 敵方」</li><li>調整隊員：請點擊「隊員」進行新增、移除</li><li>藍色按鈕為「我方得分」</li><li>黃色按鈕為「敵方得分」</li><li>灰色按鈕為「失分」</li><li>計分：請先選擇得失分隊員，再選得失分按鈕；若無選擇，則計入團隊得失分</li></div>'
+            html: '<div class="text-left"><li>更換隊名：請點擊上方「我方 VS 敵方」</li><li>調整隊員：請點擊「隊員」進行新增、移除</li><li>藍色按鈕為「我方得分」</li><li>黃色按鈕為「敵方得分」</li><li>灰色按鈕為「失分」</li><li>計分：請先選擇得失分隊員，再選得失分按鈕；若無選擇，則計入團隊得失分</li></div>',
           })
         },
         async showStoryRecord () {
