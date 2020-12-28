@@ -101,16 +101,8 @@ block script
         showScoreBoard: true,
         scoreBoard: [], // 分數板
         scoreOrder: [], // 紀錄得分順序
-        teamA: {
-          name: 'A 隊',
-          win: 0,
-          score: 0,
-        },
-        teamB: {
-          name: 'B 隊',
-          win: 0,
-          score: 0,
-        },
+        teamA: { name: '我方', win: 0, score: 0 },
+        teamB: { name: '敵方', win: 0, score: 0 },
         record: {
           attacks: {
             serve: { name: '發球', teamA: 0, teamB: 0 },
@@ -126,6 +118,7 @@ block script
         },
       },
       mounted () {
+        this.useAlert()
         this.init()
       },
       computed: {
@@ -170,7 +163,16 @@ block script
           const storyRecords = JSON.parse(localStorage.getItem('scoreboard-simple'))
           this.storyRecords = storyRecords || []
         },
-        nextTeam () {
+        async nextTeam (type = '') {
+          let buttonText = '下一隊'
+          let text = '選擇「下一隊」，之前的總紀錄都會消失！你可以先至「總紀錄」截圖保存，再繼續下一隊的比賽。'
+          if (type === '清除紀錄') {
+            buttonText = '清除'
+            text = '清除紀錄後將無法挽回！'
+          }
+          const result = await this.nextTeamAlert(buttonText, text)
+          if (!result.isConfirmed) return
+
           [this.teamA.win, this.teamB.win] = [0, 0]
           localStorage.removeItem('scoreboard-simple')
           this.init()
@@ -215,23 +217,42 @@ block script
         },
         async changeName () {
           const { value: teamAName } = await Swal.fire({
-            title: '更改 A 隊隊名',
+            cancelButtonText: '取消',
+            confirmButtonText: '確定',
             input: 'text',
             inputValue: this.teamA.name,
             showCancelButton: true,
+            title: '更改我方隊名',
           })
           const { value: teamBName } = await Swal.fire({
-            title: '更改 B 隊隊名',
+            cancelButtonText: '取消',
+            confirmButtonText: '確定',
             input: 'text',
             inputValue: this.teamB.name,
             showCancelButton: true,
+            title: '更改敵方隊名',
           })
           this.teamA.name = teamAName || this.teamA.name
           this.teamB.name = teamBName || this.teamB.name
         },
+        async useAlert () {
+          Swal.fire({
+            title: '使用說明',
+            html: '<div class="text-left"><li>更換隊名：請點擊上方「我方 VS 敵方」</li><li>藍色按鈕為「我方得分方式」</li><li>黃色按鈕為「敵方得分方式」</li><li>灰色按鈕為「失分」</li></div>',
+          })
+        },
+        async nextTeamAlert (buttonText, text) {
+          return await Swal.fire({
+            title: '注意',
+            showCancelButton: true,
+            cancelButtonText: '先去截圖',
+            confirmButtonText: buttonText,
+            text,
+          })
+        },
         grades () {
-          const faultA = _.sumBy(_.map(this.record.faults), fault => { return fault.teamA }) // A 隊總失分
-          const faultB = _.sumBy(_.map(this.record.faults), fault => { return fault.teamB }) // B 隊總失分
+          const faultA = _.sumBy(_.map(this.record.faults), fault => { return fault.teamA }) // 我方總失分
+          const faultB = _.sumBy(_.map(this.record.faults), fault => { return fault.teamB }) // 敵方總失分
     
           // 儲存每次的紀錄
           this.storyRecords = {
@@ -346,7 +367,7 @@ block script
                   </tr>
                   </tbody></table></div>`,
           })
-          if (result.isConfirmed) this.nextTeam()
+          if (result.isConfirmed) this.nextTeam('清除紀錄')
         },
       },
     })
