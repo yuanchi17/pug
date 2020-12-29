@@ -12,6 +12,7 @@ module.exports = {
   globals: {
     _: 'readonly',
     axios: 'readonly',
+    moment: 'readonly',
     Papa: 'readonly',
     Swal: 'readonly',
     Vue: 'readonly',
