@@ -8,63 +8,80 @@ block style
     :sass
       [v-cloak]
         display: none
+      $LIST_BUTTON_WIDTH: 62px
+      body
+        background-color: #eee
+
       #list
-        .list-group-item
-          & p
-            max-width: calc(99% - 74px)
+        box-shadow: 0 2px 0 #999
         ul
           & .button-group
-            width: 74px
+            width: $LIST_BUTTON_WIDTH
+        .list-group-item
+          & p
+            max-width: calc(99% - $LIST_BUTTON_WIDTH)
+
+      #select.btn:focus
+        box-shadow: none
+        outline: none
+
+      input
+        border-radius: 4px
+        box-shadow: 0 2px 0 #999
+      i
+        &.btn-outline-dark, &.btn-outline-primary, &.btn-outline-danger
+          border: none
+        &.btn-outline-primary:hover
+          background-color: #ffffff
+          border-color: #ffffff
+          border: none
+          color: #0069d9
+        &.btn-outline-danger:hover
+          background-color: #ffffff
+          border-color: #ffffff
+          border: none
+          color: #dc3545
 
 block content
   include /navbar
   #app.container.pt-3(v-cloak)
-    form
-      .form-row.mt-3
-        .col-md-6.mb-3
-          .input-group
-            input.form-control(type="date" v-model="duedate" :min="nowDate")
-            .input-group-append
-              button.btn.btn-outline-secondary(type="button" id="button-now" @click="duedate = nowDate") 今天
-        .form-group.col-md-6.mb-3
-          .input-group
-            input#todo.form-control(type="text" v-model="todoItem" placeholder="請輸入代辦事項")
-            .input-group-append
-              button.btn.btn-outline-primary.btn-sm.btn-block(type="button" @click="addItem()") 新增
-    
-    .row.m-1.d-flex.justify-content-around
-      .col-12.col-lg-5
-        #list.card.mt-3
-          .card-body.d-flex.justify-content-between.align-items-center
-            .card-title.d-flex.align-items-center.m-0
-              vue-ellipse-progress(:progress="progress", color="#007bff", size=30, empty-thickness=1, thickness=1.5, line-mode="out 2", font-size="0.8rem", font-color="blue")
-              h5.m-0.ml-2(style="color:#007bff") 進度 {{ doneList.length }} / {{ allListLen }} 
-            .btn-group.btn-group-sm(role="group" aria-label="First group")
-              button.btn(:class="pageIsTodoList ? 'btn-primary' : 'btn-outline-secondary'" type='button' @click="page = 'todo-list'") TODO
-              button.btn(:class="!pageIsTodoList ? 'btn-primary' : 'btn-outline-secondary'" type='button' @click="page = 'done-list'") DONE
-          ul#todo.list-group.list-group-flush(v-if="pageIsTodoList")
-            li.list-group-item.d-flex.justify-content-between.align-items-center(:class="item.date > moment(nowDate).format('MM-DD') ? 'list-group-item-dark' : '' " v-for="(item, index) in todoList" :key="index")
-              p.m-0.my-auto {{item.date}}　|　{{item.todo}}
-              .button-group
-                i.fa.fa-check.btn.btn-outline-primary.btn-sm.mx-1(type="button" @click="done(index)")
-                i.fa.fa-trash-o.btn.btn-outline-danger.btn-sm(type="button" @click="remove(index)")
-          ul#done.list-group.list-group-flush(v-else)
-            li.list-group-item.d-flex.justify-content-between(v-for="(item, index) in doneList" :key="index")
-              p.m-0.my-auto {{item.date}}　|　{{item.todo}}
-          .card-body.d-flex(v-if="(todoList.length && pageIsTodoList) || (doneList.length && !pageIsTodoList)")
-            button.btn.btn-outline-danger.btn-sm.ml-auto(type="button" @click="pageIsTodoList ? delTodoAll() : delDoneAll()") 清空
+    .d-flex.justify-content-center
+      form(@submit.prevent="addItem()")
+        input.form-control.mb-3(type="date" v-model="duedate" :min="NOW" placeholder="請選擇日期")
+        input.form-control(autofocus type="text" v-model="todoItem" placeholder="請輸入代辦事項")
+        .input-submit(type="submit")
 
-//- TODO 1.排版美編
+    #list.card.mt-3.d-flex.justify-content-center(v-if="allListLen")
+      .card-body.d-flex.justify-content-between.align-items-center
+        .card-title.d-flex.align-items-center.m-0
+          vue-ellipse-progress(:progress="progress", color="#007bff", size=30, empty-thickness=1, thickness=1.5, line-mode="out 2", font-size="0.8rem", font-color="blue")
+          p.m-0.ml-2(style="color:#007bff") 進度 {{ doneList.length }} / {{ allListLen }} 
+        .btn-group.btn-group-sm(role="group")
+          button#select.btn(:class="pageIsTodoList ? 'btn-primary' : 'btn-outline-secondary'" type='button' @click="page = 'todo-list'") TODO
+          button#select.btn(:class="!pageIsTodoList ? 'btn-primary' : 'btn-outline-secondary'" type='button' @click="page = 'done-list'") DONE
+      ul.list-group.list-group-flush(v-if="showTodoList")
+        li.list-group-item.d-flex.justify-content-between.align-items-center(:class="item.date < dateToMMDD(NOW) ? 'list-group-item-secondary' : '' " v-for="(item, index) in todoList" :key="index")
+          p.m-0.my-auto {{item.date}}　|　{{item.todo}}
+          .button-group
+            i.fa.fa-check.btn.btn-sm(:class="item.date < dateToMMDD(NOW) ? 'btn-outline-dark' : 'btn-outline-primary' " type="button" @click="done(index)")
+            i.fa.fa-trash-o.btn.btn-sm(:class="item.date < dateToMMDD(NOW) ? 'btn-outline-dark' : 'btn-outline-danger' " type="button" @click="remove(index)")
+      ul.list-group.list-group-flush(v-if="showDoneList")
+        li.list-group-item(v-for="(item, index) in doneList" :key="index")
+          p.m-0.my-auto {{item.date}}　|　{{item.todo}}
+      .card-body.d-flex(v-if="showTodoList || showDoneList")
+        button.btn.btn-outline-danger.btn-sm.ml-auto(type="button" @click="pageIsTodoList ? delTodoAll() : delDoneAll()") 清空
+
 block script
   script(src="https://cdn.jsdelivr.net/npm/moment@2/moment.min.js")
   script(src="https://cdn.jsdelivr.net/npm/vue-ellipse-progress@1/dist/vue-ellipse-progress.umd.min.js")
   script.
-    const vm = new Vue({ // eslint-disable-line no-unused-vars
+    const NOW = moment().format('YYYY-MM-DD')
+    const dateToMMDD = date => moment(date).format('MM-DD')
+    window.vm = new Vue({
       el: '#app',
       data: {
         doneList: [],
         duedate: '',
-        nowDate: '',
         page: 'todo-list',
         todoItem: '',
         todoList: [],
@@ -76,40 +93,44 @@ block script
         allListLen () { return this.doneList.length + this.todoList.length },
         pageIsTodoList () { return this.page === 'todo-list' },
         progress () { return _.floor((this.doneList.length / this.allListLen) * 100) },
+        showDoneList () { return this.doneList.length && !this.pageIsTodoList },
+        showTodoList () { return this.todoList.length && this.pageIsTodoList },
       },
       methods: {
-        alert (icon, text) {
-          Swal.fire({
-            text,
-            icon,
-          })
-        },
         init () {
-          const now = moment().format('YYYY-MM-DD')
-          this.duedate = now
-          this.nowDate = now
-          this.todoList = (localStorage.getItem('todoList')) ? JSON.parse(localStorage.getItem('todoList')) : []
-          this.doneList = (localStorage.getItem('doneList')) ? JSON.parse(localStorage.getItem('doneList')) : []
+          this.duedate = NOW
+          const doneList = localStorage.getItem('doneList')
+          const todoList = localStorage.getItem('todoList')
+
+          this.doneList = doneList ? JSON.parse(doneList) : []
+          this.todoList = todoList ? JSON.parse(todoList) : []
         },
         done (index) {
           this.doneList.push(this.todoList[index])
           this.remove(index)
-          localStorage.setItem('doneList', JSON.stringify(this.doneList))
+          this.saveSession()
         },
         addItem () {
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(this.duedate)) return this.alert('warning', '請輸入日期')
+          if (!this.duedate) return this.alert('warning', '請輸入日期')
           if (_.trim(this.todoItem) === '') return this.alert('warning', '請輸入代辦事項')
           this.todoList.push({
-            date: moment(this.duedate).format('MM-DD'),
+            date: dateToMMDD(this.duedate),
             todo: this.todoItem,
           })
           this.todoList = _.sortBy(this.todoList, 'date')
           this.todoItem = ''
-          localStorage.setItem('todoList', JSON.stringify(this.todoList))
+          this.saveSession()
         },
         remove (index) {
           this.todoList.splice(index, 1)
+          this.saveSession()
+        },
+        saveSession () {
+          localStorage.setItem('doneList', JSON.stringify(this.doneList))
           localStorage.setItem('todoList', JSON.stringify(this.todoList))
+        },
+        alert (icon, text) {
+          Swal.fire({ text, icon })
         },
         async delTodoAll () {
           const confirm = await Swal.fire({
