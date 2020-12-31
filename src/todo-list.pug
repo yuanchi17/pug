@@ -48,8 +48,7 @@ block content
     .d-flex.justify-content-center
       form(@submit.prevent="addItem()")
         input.form-control.mb-3(type="date" v-model="duedate" :min="NOW" placeholder="請選擇日期")
-        input.form-control(autofocus type="text" v-model="todoItem" placeholder="請輸入代辦事項")
-        .input-submit(type="submit")
+        input.form-control(v-if="showTodoInput" autofocus type="text" v-model="todoItem" placeholder="請輸入代辦事項")
 
     #list.card.mt-3.d-flex.justify-content-center(v-if="allListLen")
       .card-body.d-flex.justify-content-between.align-items-center
@@ -95,6 +94,10 @@ block script
         progress () { return _.floor((this.doneList.length / this.allListLen) * 100) },
         showDoneList () { return this.doneList.length && !this.pageIsTodoList },
         showTodoList () { return this.todoList.length && this.pageIsTodoList },
+        showTodoInput () {
+          if (!this.duedate) this.todoItem = ''
+          return this.duedate
+        },
       },
       methods: {
         init () {
