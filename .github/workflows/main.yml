@@ -1,0 +1,45 @@
+name: github-pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ] #  只在 master 上 push 觸發部屬
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest # 使用 ubuntu 系统鏡像運行自動化腳本
+
+    steps: # 自動化步驟
+    - uses: actions/checkout@v2 # 下載代碼倉庫
+    - name: 安裝 Node.js 與 yarn
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14.x'
+        check-latest: true
+
+    - name: 取得 yarn 的快取資料夾路徑
+      id: yarn-cache-dir-path
+      run: echo "::set-output name=dir::$(yarn cache dir)"
+
+    - name: Cache node modules
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-yarn-modules
+      with:
+        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - run: yarn
+    - name: 編譯網頁
+      run: yarn build
+
+    - name: 把網頁放到 GitHub Pages 的專屬分支上
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }} # 之前有用 travis CI 建過
+        publish_dir: ./dist
+        force_orphan: true
