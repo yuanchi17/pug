@@ -1,0 +1,109 @@
+extends /layout
+
+block beforehtml
+  - const title = 'Beacon 工作坊'
+
+block style
+  style
+    :sass
+      [v-cloak]
+        display: none
+
+block content
+  include /navbar
+  #app.content.container.p-3(v-cloak)
+    h3.text-center Beacon 工作坊
+    button.btn.btn-primary.btn-block(type="button" @click="btnToggleScan") 開始掃描
+    #beacon-list(v-if="!device")
+      .card
+        ul.list-group
+          li.list-group-item.d-flex
+            h5.my-auto Setting
+            .d-flex.flex-column.ml-3
+              p.mb-1 version: {{ setting.version }}, enabled: {{ setting.enabled }}, ts: {{ setting.ts }}
+          li.list-group-item.d-flex(v-for="(beacon, bId) in beacons", :key=i)
+            h5.my-auto Beacon {{ bId + 1}}
+            .d-flex.flex-column.ml-3
+              p.mb-1 hwid: {{ beacon.hwid }}
+              p.mb-1 ts: {{ beacon.ts }}
+            button.btn.btn-primary.btn-light.ml-auto(type="button") 修改
+      .d-flex
+        button.btn.btn-primary(type="button" @click="readValue") 讀取
+        button.btn.btn-primary(type="button") 寫入
+    //- input.form-control(type="text" v-model="" placeholder="請輸入 HWID")
+    //- input.form-control(type="text" v-model="" placeholder="請輸入 vendor")
+    //- input.form-control(type="text" v-model="" placeholder="請輸入 lot")
+    //- input.form-control(type="text" v-model="" placeholder="請輸入 offset")
+
+block script
+  script.
+    const bluetooth = _.get(navigator, 'bluetooth')
+    window.vm = new Vue({
+      el: '#app',
+      data: {
+        device: {},
+        setting: {
+          version: 1,
+          enabled: '11111111',
+          ts: '0000000000000001',
+        },
+        beacons: [
+          { 
+            hwid: '01deadbeef',
+            vendor: '5cf2a423',
+            lot: '8c194fe41d7fe34f',
+            ts: '0000000000000001',
+          },
+          { 
+            hwid: '01deadbeef',
+            vendor: '5cf2a423',
+            lot: '8c194fe41d7fe34f',
+            ts: '0000000000000002',
+          },
+          { 
+            hwid: '01deadbeef',
+            vendor: '5cf2a423',
+            lot: '8c194fe41d7fe34f',
+            ts: '0000000000000003',
+          },
+          { 
+            hwid: '01deadbeef',
+            vendor: '5cf2a423',
+            lot: '8c194fe41d7fe34f',
+            ts: '0000000000000004',
+          },
+        ]
+      },
+      mounted () {
+      },
+      computed: {
+      },
+      methods: {
+        async btnToggleScan () {
+          let options = {
+            "filters": [{
+              "name": "Octobeacon ESP32"
+            }],
+            "optionalServices": ["89798198-0000-0000-0000-000000000000"]
+          }
+          this.device = await bluetooth.requestDevice(options)
+          if (!this.device) {
+            throw "No device selected"
+          }
+          await this.connect()
+          this.device.addEventListener('gattserverdisconnected', console.log('Device is disconnected.'))
+        },
+        async connect() {
+          if (!this.device) {
+            return Promise.reject('Device is not connected.')
+          }
+          await this.device.gatt.connect();
+        },
+        async readValue() {
+          const service = await this.device.gatt.getPrimaryService("89798198-0000-0000-0000-000000000000")
+          const characteristic = await service.getCharacteristic("89798198-249d-48bd-894e-db156f1a70e6")
+          this.beacons = await characteristic.readValue()
+          console.log(this.beacons)
+        }
+      },
+    })
