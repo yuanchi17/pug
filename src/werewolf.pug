@@ -71,11 +71,11 @@ block content
           button.btn.btn-secondary.btn-block.mt-auto(type="button", @click="btnCheckRole") {{ number > roles.length ? '進入黑夜' : '查看角色' }}
     #page-night.page.d-flex.flex-column.justify-content-center(v-else-if="page === 'night'")
       .all-close(v-if="night.status === 'close'")
-        //- embed(:src=`${process[night.role]}.mp3` height="0" width="0")
-        h3.text-center {{ process[night.role].text }}請閉眼
-      h3.text-center(v-else) {{ process[night.role].text }}請睜眼
+        video(:src="`${_.get(process['night'], 'voice')}.mp3`" autoplay)
+        //- video(src="https://raw.githubusercontent.com/yuanchi17/pug/master/src/audio/night.mp3" autoplay)
+        h3.text-center {{ process['night'].text }}請閉眼
+      h3.text-center(v-else) {{ process['night'].text }}請睜眼
     #page-wolf.page.d-flex.flex-column.justify-content-center(v-else-if="page === 'wolf'")
-      embed(src="wolf-first-night.mp3" height="0" width="0")
       h3.text-center 狼人現身，你們要殺誰？
       .show-number.d-flex.flex-wrap.justify-content-center
         button.btn.btn-secondary.m-1(type="button", @click="wolfSkill(r.id)", v-for="r in roles" :key=r) {{ _.padStart(r.id, 2, '0') }} 號
@@ -110,7 +110,6 @@ block content
 
 block script
   script(src="https://cdn.jsdelivr.net/npm/moment@2/moment.min.js")
-  script(src="https://cdn.jsdelivr.net/npm/vue-ellipse-progress@1/dist/vue-ellipse-progress.umd.min.js")
   script.
     const ROLES = {
       people: {
@@ -151,28 +150,28 @@ block script
       },
     }
     const PROCESS = {
-      all: { text: '天黑', voice: 'night' },
-      wolf: { text: '狼人', voice: '' },
-      prophet: { text: '預言家', voice: '' },
-      witch: { text: '女巫', voice: '' },
-      hunter: { text: '獵人', voice: '' },
+      night: { text: '天黑', voice: 'night' },
+      wolf: { text: '狼人', voice: 'wolf' },
+      prophet: { text: '預言家', voice: 'prophet' },
+      witch: { text: '女巫', voice: 'witch' },
+      hunter: { text: '獵人', voice: 'hunter' },
     }
     const sleep = t => new Promise(resolve => { setTimeout(resolve, t) })
-    const SECONDS = 500 // 等待 3 秒
+    const SECONDS = 5000 // 等待 5 秒
 
     window.vm = new Vue({
       el: '#app',
       data: {
         checkRole: false,
         init: {
-          people: 2,
-          wolf: 2,
-          prophet: true,
-          witch: true,
-          hunter: true,
+          people: 1,
+          wolf: 1,
+          prophet: false,
+          witch: false,
+          hunter: false,
           wolfKing: false,
         },
-        night: {
+        night: { // 更新哪個角色要閉眼睜眼
           role: '',
           status: 'close',
         },
@@ -364,7 +363,7 @@ block script
           this.page = 'bright'
           this.game.status = this.isGameOver()
         },
-        async updateNight (role, status) {
+        async updateNight (role, status) { // 更新哪個角色要閉眼睜眼
           this.night = { role, status }
           await sleep(SECONDS)
         },
