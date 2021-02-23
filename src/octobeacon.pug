@@ -16,9 +16,9 @@ block content
   #app.content.container.p-3(v-cloak)
     h3.text-center.m-0 Beacon 工作坊
     .d-flex.flex-column(v-if="!device")
-      //- button.btn.btn-primary.mx-auto.my-2(type="button" @click="btnToggleScan") 選擇裝置
+      button.btn.btn-primary.mx-auto.my-2(type="button" @click="btnToggleScan") 選擇裝置
     //- #beacon-list(v-else)
-    #beacon-list
+    #beacon-list(v-else)
       .card.my-3
         ul.list-group
           li.list-group-item.d-flex.justify-content-between.align-items-center.p-2 Version
@@ -31,9 +31,9 @@ block content
             .d-flex
               h5.my-auto Beacon {{ bId + 1}}
               .custom-control.custom-switch.ml-auto
-                input.custom-control-input(type="checkbox" :id="`switch-${bId}`" v-model="beacon.switch")
-                label.custom-control-label(:for="`switch-${bId}`") 啟用
-            template(v-if="beacon.switch")
+                input.custom-control-input(type="checkbox" :id="`enabled-${bId}`" v-model="beacon.enabled")
+                label.custom-control-label(:for="`enabled-${bId}`") 啟用
+            template(v-if="beacon.enabled")
               .input-group.mt-3.mb-2
                 .input-group-prepend
                   p.input-group-text HWID
@@ -49,10 +49,10 @@ block content
               .input-group.mb-1
                 .input-group-prepend
                   p.input-group-text ts
-                input.form-control.text-right(type="text" :id="`ts-${bId}`" v-model="beacon.ts")
+                input.form-control.text-right(type="text" :id="`ts-${bId}`" v-model="beacon.offset")
       .d-flex.justify-content-center.mt-2
         button.btn.btn-primary.mx-1(type="button" @click="readValue") 讀取資料
-        button.btn.btn-danger.mx-1(type="button" @click="writeValue(beaconTmp)") 寫入資料
+        button.btn.btn-danger.mx-1(type="button" @click="writeValue") 寫入資料
 
 block script
   script.
@@ -67,70 +67,8 @@ block script
       el: '#app',
       data: {
         device: null,
-        setting: {
-          version: 1,
-          enabled: '11111111',
-          ts: '0000000000000001',
-        },
-        beacons: [
-          { 
-            switch: true,
-            hwid: '01deadbeef',
-            vendor: '5cf2a423',
-            lot: '8c194fe41d7fe34f',
-            ts: '0000000000000001',
-          },
-          { 
-            switch: true,
-            hwid: '01deadbeef',
-            vendor: '5cf2a423',
-            lot: '8c194fe41d7fe34f',
-            ts: '0000000000000002',
-          },
-          { 
-            switch: true,
-            hwid: '01deadbeef',
-            vendor: '5cf2a423',
-            lot: '8c194fe41d7fe34f',
-            ts: '0000000000000003',
-          },
-          { 
-            switch: true,
-            hwid: '01deadbeef',
-            vendor: '5cf2a423',
-            lot: '8c194fe41d7fe34f',
-            ts: '0000000000000004',
-          },
-          { 
-            switch: true,
-            hwid: '01deadbeef',
-            vendor: '5cf2a423',
-            lot: '8c194fe41d7fe34f',
-            ts: '0000000000000005',
-          },
-          { 
-            switch: true,
-            hwid: '01deadbeef',
-            vendor: '5cf2a423',
-            lot: '8c194fe41d7fe34f',
-            ts: '0000000000000006',
-          },
-          { 
-            switch: true,
-            hwid: '01deadbeef',
-            vendor: '5cf2a423',
-            lot: '8c194fe41d7fe34f',
-            ts: '0000000000000007',
-          },
-          { 
-            switch: true,
-            hwid: '01deadbeef',
-            vendor: '5cf2a423',
-            lot: '8c194fe41d7fe34f',
-            ts: '0000000000000008',
-          },
-        ],
-        beaconsRead: [],
+        setting: {},
+        beacons: [],
         beaconTmp: "",
         scanning: false
       },
@@ -182,21 +120,45 @@ block script
           const service = await this.device.gatt.getPrimaryService(UUID_SERVICE)
           const characteristic = await service.getCharacteristic(UUID_CHARACTERISTIC)
 
-          this.beaconsRead = await characteristic.readValue()
+          const readValue = await characteristic.readValue()
+          const uint8Array = new Uint8Array(readValue.buffer)
+          console.log('ReadValue: ', readValue)
 
-          const decoder = new TextDecoder('utf-8')
-          console.log(`Description: ${decoder.decode(this.beaconsRead)}`)
-          console.log(this.beaconsRead)
+          this.setting = {
+            version: this.uint8to16(_.slice(uint8Array, 0, 1)),
+            enabled: _.slice(uint8Array, 1, 2),
+            ts: this.uint8to16(_.reverse(_.slice(uint8Array, 2, 10))),
+          }
+
+          // TODO offset 是否要先跟 this.setting.ts 相加?
+          _.each(_.chunk(uint8Array.slice(10), 25), (b, i) => {
+            this.beacons[i] = {
+              enabled: this.getEnable(i),
+              offset: this.uint8to16(_.slice(b, 0, 8)),
+              hwid: this.uint8to16(_.slice(b, 8, 13)),
+              vendor: this.uint8to16(_.slice(b, 13, 17)),
+              lot: this.uint8to16(_.slice(b, 17, 25)),
+            }
+          })
+          console.log('Beacons: ', this.beacons)
         },
-        async writeValue(data) {
-          const service = await this.device.gatt.getPrimaryService(UUID_SERVICE);
+        async writeValue() {
+          const service = await this.device.gatt.getPrimaryService(UUID_SERVICE)
           const characteristic = await service.getCharacteristic(UUID_CHARACTERISTIC)
 
+          // TODO 轉換資料寫入
           const encoder = new TextEncoder('utf-8')
           await characteristic.writeValue(encoder.encode(data))
         },
-        updateScanning () {
+        updateScanning () { // TODO 確認寫法是否正確
           this.scanning = _.get(this, 'device.active', false)
         },
+        uint8to16 (data) {
+          return _.map(data, i => _.padStart(Number(i).toString(16), 2, '0')).join('')
+        },
+        getEnable (i) {
+          const enabled = Number(this.setting.enabled).toString(2)
+          return enabled[i] << 1 === 2
+        }
       },
     })
