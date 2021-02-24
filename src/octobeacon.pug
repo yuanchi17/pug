@@ -55,10 +55,10 @@ block script
   script.
     const bluetooth = _.get(navigator, 'bluetooth')
     // Device Name: Maximum 30 bytes
-    const DEVICE_NAME = "Octobeacon"
+    const DEVICE_NAME = 'Octobeacon'
     // UUID Generator: https://www.uuidgenerator.net/version4
-    const UUID_SERVICE = "89798198-0000-0000-0000-000000000000"
-    const UUID_CHARACTERISTIC = "89798198-249d-48bd-894e-db156f1a70e6"
+    const UUID_SERVICE = '89798198-0000-0000-0000-000000000000'
+    const UUID_CHARACTERISTIC = '89798198-249d-48bd-894e-db156f1a70e6'
     
     window.vm = new Vue({
       el: '#app',
@@ -66,13 +66,13 @@ block script
         device: null,
         setting: {},
         beacons: [],
-        scanning: false
+        scanning: false,
       },
       mounted () {
       },
       computed: {
       },
-      methods: { // TODO 讀取 & 寫入後斷線
+      methods: {
         async getBluetoothAvailability () {
           return await _.invoke(navigator, 'bluetooth.getAvailability') === true
         },
@@ -87,32 +87,32 @@ block script
               this.device.stop()
               this.device = null
             }
-          } catch(err) {
+          } catch (err) {
             console.log(err)
           }
         },
-        async bluetoothRequest() {
-          let options = {
-            "filters": [{
-              "namePrefix": DEVICE_NAME
+        async bluetoothRequest () {
+          const options = {
+            filters: [{
+              namePrefix: DEVICE_NAME,
             }],
-            "optionalServices": [UUID_SERVICE]
+            optionalServices: [UUID_SERVICE],
           }
           this.device = await bluetooth.requestDevice(options)
-          if (!this.device) throw new Error("No device selected")
+          if (!this.device) throw new Error('No device selected')
           this.device.addEventListener('gattserverdisconnected', this.onDisconnected())
         },
-        async gattConnect() {
+        async gattConnect () {
           if (!this.device) throw new Error('Device is not connected.')
           const gattServer = await this.device.gatt.connect()
           if (!gattServer.connected) throw new Error('BluetoothRemoteGATTServer is not connected.')
           console.log('BluetoothRemoteGATTServer is connected.')
           await this.readValue()
         },
-        async onDisconnected(event) {
+        async onDisconnected (event) {
           console.log(`Device ${this.device.name} is disconnected.`)
         },
-        async readValue() {
+        async readValue () {
           try {
             // 確認有無連線
             if (!this.device.gatt.connected) await this.device.gatt.connect()
@@ -129,24 +129,24 @@ block script
               ts: readValue.getBigUint64(2, true), // 8 byte
             }
 
-            for (let i = 0; i < 8 ; i++) {
+            for (let i = 0; i < 8; i++) {
               this.$set(this.beacons, i, {
                 enabled: this.setting.enabled[i] === '1',
-                offset: _.padStart((readValue.getBigUint64(10 + 25*i, true) + this.setting.ts).toString(16), 16, '0'), // 8 byte
-                hwid: this.getUint8Data(readValue, 18 + 25*i, 5), // 5 byte
-                vendor: this.getUint8Data(readValue, 23 + 25*i, 4), // 4 byte
-                lot: this.getUint8Data(readValue, 27 + 25*i, 8), // 8 byte
+                offset: _.padStart((readValue.getBigUint64(10 + 25 * i, true) + this.setting.ts).toString(16), 16, '0'), // 8 byte
+                hwid: this.getUint8Data(readValue, 18 + 25 * i, 5), // 5 byte
+                vendor: this.getUint8Data(readValue, 23 + 25 * i, 4), // 4 byte
+                lot: this.getUint8Data(readValue, 27 + 25 * i, 8), // 8 byte
               })
             }
             console.log('Beacons: ', this.beacons)
 
             this.device.gatt.disconnect() // 斷開藍芽連線
-          } catch(err){
+          } catch (err) {
             console.log(err.message)
             this.device.gatt.disconnect() // 斷開藍芽連線
           }
         },
-        async writeValue() {
+        async writeValue () {
           try {
             // 確認有無連線
             if (!this.device.gatt.connected) await this.device.gatt.connect()
@@ -163,18 +163,18 @@ block script
             dataView.setUint8(1, enabled)
             dataView.setBigUint64(2, BigInt(0))
 
-            for (let i = 0; i < 8 ; i++) {
+            for (let i = 0; i < 8; i++) {
               const beacon = this.beacons[i]
-              dataView.setBigUint64(10+25*i, BigInt('0x'+ beacon.offset), true)
-              this.setUint8Data(dataView, 18 + 25*i, beacon.hwid)
-              this.setUint8Data(dataView, 23 + 25*i, beacon.vendor)
-              this.setUint8Data(dataView, 27 + 25*i, beacon.lot)
+              dataView.setBigUint64(10 + 25 * i, BigInt('0x' + beacon.offset), true)
+              this.setUint8Data(dataView, 18 + 25 * i, beacon.hwid)
+              this.setUint8Data(dataView, 23 + 25 * i, beacon.vendor)
+              this.setUint8Data(dataView, 27 + 25 * i, beacon.lot)
             }
 
             await characteristic.writeValue(dataView)
             console.log('寫入成功')
             this.device.gatt.disconnect() // 斷開藍芽連線
-          } catch(err) {
+          } catch (err) {
             console.log(err.message)
             this.device.gatt.disconnect() // 斷開藍芽連線
           }
@@ -187,10 +187,10 @@ block script
         },
         setUint8Data (dataView, start, data) {
           const chunks = _.map(_.chunk(data, 2), d => d.join(''))
-          return _.each(chunks, (chunk, i) => dataView.setUint8(start+i, _.parseInt(chunk, 16)))
+          return _.each(chunks, (chunk, i) => dataView.setUint8(start + i, _.parseInt(chunk, 16)))
         },
         enabledToHex () {
           return _.parseInt(_.map(this.enabled, e => e ? '1' : '0').join(''), 2)
-        }
+        },
       },
     })

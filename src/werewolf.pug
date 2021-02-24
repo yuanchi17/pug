@@ -180,12 +180,12 @@ block script
         process: PROCESS,
         roles: [],
         willKill: [],
-        game: { status: false, winner: '', loser: ''}
+        game: { status: false, winner: '', loser: '' },
       },
       mounted () {
       },
       computed: {
-        hasHunterOrWolfking () { return !!(_.find(this.roles, { name: '獵人' }) || _.find(this.roles, { name: '狼王' })) }
+        hasHunterOrWolfking () { return !!(_.find(this.roles, { name: '獵人' }) || _.find(this.roles, { name: '狼王' })) },
       },
       methods: {
         async init () {
@@ -352,13 +352,13 @@ block script
           //- TODO voice 昨晚...
 
           if (!this.willKill.length) return
-          _.each(this.willKill, rId => this.roles[rId-1].life = false)
+          _.each(this.willKill, rId => this.roles[rId - 1].life = false)
           this.game.status = this.isGameOver()
         },
         async takeOneSkill (rId) {
           const result = await this.checkSelect(`確認要帶走 ${rId} 號？`)
           if (!result.isConfirmed) return
-          const role = this.roles[rId-1]
+          const role = this.roles[rId - 1]
           role.life = false
           this.page = 'bright'
           this.game.status = this.isGameOver()
@@ -395,7 +395,7 @@ block script
           }
 
           return false
-        }
+        },
       },
     })
 
