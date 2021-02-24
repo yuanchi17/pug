@@ -1,7 +1,7 @@
 extends /layout
 
 block beforehtml
-  - const title = 'Beacon 工作坊'
+  - const title = 'Beacon 設定工具'
 
 block style
   style
@@ -14,10 +14,9 @@ block style
 block content
   include /navbar
   #app.content.container.p-3(v-cloak)
-    h3.text-center.m-0 Beacon 工作坊
+    h3.text-center.m-0 Beacon 設定工具
     .d-flex.flex-column(v-if="!device")
       button.btn.btn-primary.mx-auto.my-2(type="button" @click="btnToggleScan") 選擇裝置
-    //- #beacon-list(v-else)
     #beacon-list(v-else)
       .card.my-3
         ul.list-group
@@ -46,8 +45,8 @@ block content
                 input.form-control.text-right(type="text" :id="`lot-${bId}`" v-model="beacon.lot")
               .input-group.mb-1
                 .input-group-prepend
-                  p.input-group-text ts
-                input.form-control.text-right(type="text" :id="`ts-${bId}`" v-model="beacon.offset")
+                  p.input-group-text offset
+                input.form-control.text-right(type="text" :id="`offset-${bId}`" v-model="beacon.offset")
       .d-flex.justify-content-center.mt-2
         button.btn.btn-primary.mx-1(type="button" @click="readValue") 讀取資料
         button.btn.btn-danger.mx-1(type="button" @click="writeValue") 寫入資料
@@ -126,25 +125,25 @@ block script
 
             this.setting = {
               version: readValue.getUint8(0).toString(16), // 1 byte
-              enabled: _.padStart(readValue.getUint8(1).toString(2), 8, '0'),
+              enabled: _.padStart(readValue.getUint8(1).toString(2), 8, '0'), // 1 byte
               ts: readValue.getBigUint64(2, true), // 8 byte
             }
 
             for (let i = 0; i < 8 ; i++) {
-              this.beacons[i] = {
+              this.$set(this.beacons, i, {
                 enabled: this.setting.enabled[i] === '1',
                 offset: _.padStart((readValue.getBigUint64(10 + 25*i, true) + this.setting.ts).toString(16), 16, '0'), // 8 byte
                 hwid: this.getUint8Data(readValue, 18 + 25*i, 5), // 5 byte
                 vendor: this.getUint8Data(readValue, 23 + 25*i, 4), // 4 byte
                 lot: this.getUint8Data(readValue, 27 + 25*i, 8), // 8 byte
-              }
+              })
             }
             console.log('Beacons: ', this.beacons)
 
-            // 斷開藍芽連線
-            this.device.gatt.disconnect()
+            this.device.gatt.disconnect() // 斷開藍芽連線
           } catch(err){
             console.log(err.message)
+            this.device.gatt.disconnect() // 斷開藍芽連線
           }
         },
         async writeValue() {
@@ -155,27 +154,40 @@ block script
             const service = await this.device.gatt.getPrimaryService(UUID_SERVICE)
             const characteristic = await service.getCharacteristic(UUID_CHARACTERISTIC)
 
-            // TODO 轉換資料寫入
-            const data = {
-              version: this.setting.version,
-              enabled: this.enabledToHex(),
-              ts: this.setting.ts, // TODO 反轉
+            // 新增一個新的 DataView
+            const buffer = new ArrayBuffer(210)
+            const dataView = new DataView(buffer)
+
+            const enabled = _.parseInt(_.map(this.beacons, beacon => beacon.enabled ? '1' : '0').join(''), 2)
+            dataView.setUint8(0, 1) // version 1
+            dataView.setUint8(1, enabled)
+            dataView.setBigUint64(2, BigInt(0))
+
+            for (let i = 0; i < 8 ; i++) {
+              const beacon = this.beacons[i]
+              dataView.setBigUint64(10+25*i, BigInt('0x'+ beacon.offset), true)
+              this.setUint8Data(dataView, 18 + 25*i, beacon.hwid)
+              this.setUint8Data(dataView, 23 + 25*i, beacon.vendor)
+              this.setUint8Data(dataView, 27 + 25*i, beacon.lot)
             }
 
-            //- const encoder = new TextEncoder('utf-8')
-            //- await characteristic.writeValue(encoder.encode(data))
-
-            // 斷開藍芽連線
-            this.device.gatt.disconnect()
+            await characteristic.writeValue(dataView)
+            console.log('寫入成功')
+            this.device.gatt.disconnect() // 斷開藍芽連線
           } catch(err) {
             console.log(err.message)
+            this.device.gatt.disconnect() // 斷開藍芽連線
           }
         },
-        updateScanning () { // TODO 確認寫法是否正確
+        updateScanning () {
           this.scanning = _.get(this, 'device.active', false)
         },
         getUint8Data (dataView, start, len) {
           return _.times(len, i => _.padStart(dataView.getUint8(start + i).toString(16), 2, '0')).join('')
+        },
+        setUint8Data (dataView, start, data) {
+          const chunks = _.map(_.chunk(data, 2), d => d.join(''))
+          return _.each(chunks, (chunk, i) => dataView.setUint8(start+i, _.parseInt(chunk, 16)))
         },
         enabledToHex () {
           return _.parseInt(_.map(this.enabled, e => e ? '1' : '0').join(''), 2)
