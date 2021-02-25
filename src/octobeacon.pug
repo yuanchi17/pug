@@ -65,16 +65,6 @@ block script
     const UUID_SERVICE = '89798198-0000-0000-0000-000000000000'
     const UUID_CHARACTERISTIC = '89798198-249d-48bd-894e-db156f1a70e6'
     const SESSION_KEY = 'pug-octobeacon'
-    
-    const DEFAULT_BEACONS = _.times(8, i => {
-      return {
-        enabled: true,
-        offset: _.padStart('', 16, '0'),
-        hwid: _.padStart('', 10, '0'),
-        vendor: _.padStart('', 8, '0'),
-        lot: _.padStart('', 16, '0'),
-      }
-    })
 
     window.vm = new Vue({
       el: '#app',
@@ -82,6 +72,7 @@ block script
         device: null,
         setting: {},
         beacons: [],
+        scanning: false,
       },
       mounted () {
         this.setWatchBeacons()
@@ -91,24 +82,31 @@ block script
       methods: {
         setWatchBeacons () {
           const session = JSON.parse(localStorage.getItem(SESSION_KEY))
-          this.$set(this, 'beacons', !session.length ? DEFAULT_BEACONS : session)
+          session ? this.$set(this, 'beacons', session) : this.setDefault()
           this.$watch('beacons', () => {
             localStorage.setItem(SESSION_KEY, JSON.stringify(this.beacons))
           }, { deep: true })
         },
         async getBluetoothAvailability () {
-          return await _.invoke(navigator, 'bluetooth.getAvailability') === true
+          return await _.invoke(navigator, 'bluetooth.getAvailability')
         },
         async btnSelectDevice () {
           try {
-            if (!await this.getBluetoothAvailability()) throw new Error('您的裝置不支援藍芽功能')
-            await this.requestDevice()
-            await this.gattConnect()
+            console.log('btnSelectDevice')
+            this.updateScanning()
+            if (!this.scanning) {
+              if (!await this.getBluetoothAvailability()) throw new Error('您的裝置不支援藍芽功能')
+              await this.bluetoothRequest()
+              await this.gattConnect()
+            } else { // 停止掃描
+              this.device.stop()
+              this.device = null
+            }
           } catch (err) {
             Swal.fire({ icon: 'error', title: '選擇裝置失敗', text: err.message })
           }
         },
-        async requestDevice () {
+        async bluetoothRequest () {
           const options = {
             filters: [{
               namePrefix: DEVICE_NAME,
@@ -117,7 +115,10 @@ block script
           }
           this.device = await bluetooth.requestDevice(options)
           if (!this.device) throw new Error('未選擇藍芽裝置')
-          this.device.addEventListener('gattserverdisconnected', console.log(`Device ${this.device.name} is disconnected.`))
+          this.device.addEventListener('gattserverdisconnected', this.onDisconnected())
+        },
+        onDisconnected () {
+          console.log(`Device ${this.device.name} is disconnected.`)
         },
         async gattConnect () {
           if (!this.device) throw new Error('未選擇藍芽裝置')
@@ -201,7 +202,17 @@ block script
             confirmButtonText: '回復預設',
             cancelButtonText: '保留資料',
           })
-          if (result.value) this.beacons = DEFAULT_BEACONS
+          if (!result.value) return
+          this.$set(this, 'beacons', _.times(8, i => ({
+            enabled: true,
+            offset: _.padStart('', 16, '0'),
+            hwid: _.padStart('', 10, '0'),
+            vendor: _.padStart('', 8, '0'),
+            lot: _.padStart('', 16, '0'),
+          })))
+        },
+        updateScanning () {
+          this.scanning = _.get(this, 'device.active', false)
         },
         getUint8Data (dataView, start, len) {
           return _.times(len, i => _.padStart(dataView.getUint8(start + i).toString(16), 2, '0')).join('')
@@ -218,6 +229,7 @@ block script
             if (!(/[0-9a-fA-f]{8}/).test(beacon.vendor)) throw new Error(`Beacon ${i+1}：vendor 格式錯誤`)
             if (!(/[0-9a-fA-f]{16}/).test(beacon.lot)) throw new Error(`Beacon ${i+1}：lot 格式錯誤`)
           }
-        }
+        },
+        
       },
     })
