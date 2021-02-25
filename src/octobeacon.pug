@@ -10,19 +10,18 @@ block style
         display: none
       .input-group-text
         background-color: #ffffff
+        min-width: 80px
 
 block content
   include /navbar
   #app.content.container.p-3(v-cloak)
     h3.text-center.m-0 Beacon 設定工具
-    .d-flex.flex-column(v-if="!device")
-      button.btn.btn-primary.mx-auto.my-2(type="button" @click="btnToggleScan") 選擇裝置
-    #beacon-list(v-else)
-      .card.my-3
-        ul.list-group
-          li.list-group-item.d-flex.justify-content-between.align-items-center.p-2 Version
-            span {{ setting.version }}
-      .card
+    .d-flex.flex-column
+      small.text-center.m-0.mb-3.text-muted Version {{ setting.version || 1}}
+      button.btn.btn-primary.btn-sm.mx-auto.mb-2(type="button" @click="btnToggleScan") 選擇裝置
+      button.btn.btn-primary.btn-sm.mx-auto(type="button" @click="beacons = DEFAULT_BEACONS") 回復預設
+    #beacon-list.mt-3
+      .card.text-monospace
         ul.list-group
           li.list-group-item.d-flex.flex-column(v-for="(beacon, bId) in beacons", :key=bId)
             .d-flex
@@ -31,22 +30,22 @@ block content
                 input.custom-control-input(type="checkbox" :id="`enabled-${bId}`" v-model="beacon.enabled")
                 label.custom-control-label(:for="`enabled-${bId}`") 啟用
             template(v-if="beacon.enabled")
-              .input-group.mt-3.mb-2
+              .input-group.input-group-sm.mt-3
                 .input-group-prepend
-                  p.input-group-text HWID
-                input.form-control.text-right(type="text" :id="`hwid-${bId}`" v-model="beacon.hwid")
-              .input-group.mb-2
-                .input-group-prepend
-                  p.input-group-text Vendor
-                input.form-control.text-right(type="text" :id="`vendor-${bId}`" v-model="beacon.vendor")
-              .input-group.mb-2
-                .input-group-prepend
-                  p.input-group-text Lot
-                input.form-control.text-right(type="text" :id="`lot-${bId}`" v-model="beacon.lot")
-              .input-group.mb-1
-                .input-group-prepend
-                  p.input-group-text offset
+                  p.input-group-text.justify-content-end offset
                 input.form-control.text-right(type="text" :id="`offset-${bId}`" v-model="beacon.offset")
+              .input-group.input-group-sm.mt-2
+                .input-group-prepend
+                  p.input-group-text.justify-content-end hwid
+                input.form-control.text-right(type="text" :id="`hwid-${bId}`" v-model="beacon.hwid")
+              .input-group.input-group-sm.mt-2
+                .input-group-prepend
+                  p.input-group-text.justify-content-end vendor
+                input.form-control.text-right(type="text" :id="`vendor-${bId}`" v-model="beacon.vendor")
+              .input-group.input-group-sm.mt-2
+                .input-group-prepend
+                  p.input-group-text.justify-content-end lot
+                input.form-control.text-right(type="text" :id="`lot-${bId}`" v-model="beacon.lot")
       .d-flex.justify-content-center.mt-2
         button.btn.btn-primary.mx-1(type="button" @click="readValue") 讀取資料
         button.btn.btn-danger.mx-1(type="button" @click="writeValue") 寫入資料
@@ -59,7 +58,19 @@ block script
     // UUID Generator: https://www.uuidgenerator.net/version4
     const UUID_SERVICE = '89798198-0000-0000-0000-000000000000'
     const UUID_CHARACTERISTIC = '89798198-249d-48bd-894e-db156f1a70e6'
+    const SESSION_KEY = 'pug-octobeacon'
     
+    const DEFAULT_BEACONS = _.times(8, i => {
+      return {
+        enabled: true,
+        offset: _.padStart('', 16, '0'),
+        hwid: _.padStart('', 10, '0'),
+        vendor: _.padStart('', 8, '0'),
+        lot: _.padStart('', 16, '0'),
+      }
+    })
+    
+    // TODO: 提示視窗: 確認有無連線的 err、格式判斷
     window.vm = new Vue({
       el: '#app',
       data: {
@@ -69,25 +80,28 @@ block script
         scanning: false,
       },
       mounted () {
+        this.setWatchBeacons()
       },
       computed: {
       },
       methods: {
+        setWatchBeacons () {
+          const session = JSON.parse(localStorage.getItem(SESSION_KEY))
+          this.$set(this, 'beacons', !session.length ? DEFAULT_BEACONS : session)
+          this.$watch('beacons', () => {
+            localStorage.setItem(SESSION_KEY, JSON.stringify(this.beacons))
+          }, { deep: true })
+        },
         async getBluetoothAvailability () {
           return await _.invoke(navigator, 'bluetooth.getAvailability') === true
         },
         async btnToggleScan () {
           try {
-            this.updateScanning()
-            if (!this.scanning) {
-              if (!await this.getBluetoothAvailability()) throw new Error('您的裝置不支援藍芽功能')
-              await this.bluetoothRequest()
-              await this.gattConnect()
-            } else { // 停止掃描
-              this.device.stop()
-              this.device = null
-            }
+            if (!await this.getBluetoothAvailability()) throw new Error('您的裝置不支援藍芽功能')
+            await this.bluetoothRequest()
+            await this.gattConnect()
           } catch (err) {
+            Swal.fire({ icon: 'error', title: '選擇裝置失敗', text: err.message })
             console.log(err)
           }
         },
@@ -99,7 +113,7 @@ block script
             optionalServices: [UUID_SERVICE],
           }
           this.device = await bluetooth.requestDevice(options)
-          if (!this.device) throw new Error('No device selected')
+          if (!this.device) throw new Error('未選擇藍芽裝置')
           this.device.addEventListener('gattserverdisconnected', this.onDisconnected())
         },
         async gattConnect () {
@@ -115,7 +129,8 @@ block script
         async readValue () {
           try {
             // 確認有無連線
-            if (!this.device.gatt.connected) await this.device.gatt.connect()
+            await this.btnToggleScan()
+            if (!this.device) throw new Error('請選擇藍芽裝置')
 
             const service = await this.device.gatt.getPrimaryService(UUID_SERVICE)
             const characteristic = await service.getCharacteristic(UUID_CHARACTERISTIC)
@@ -143,13 +158,15 @@ block script
             this.device.gatt.disconnect() // 斷開藍芽連線
           } catch (err) {
             console.log(err.message)
-            this.device.gatt.disconnect() // 斷開藍芽連線
+            Swal.fire({ icon: 'error', title:'讀取失敗', text: err.message})
+            if (this.device) this.device.gatt.disconnect() // 斷開藍芽連線
           }
         },
         async writeValue () {
           try {
             // 確認有無連線
-            if (!this.device.gatt.connected) await this.device.gatt.connect()
+            await this.btnToggleScan()
+            if (!this.device) throw new Error('請選擇藍芽裝置')
 
             const service = await this.device.gatt.getPrimaryService(UUID_SERVICE)
             const characteristic = await service.getCharacteristic(UUID_CHARACTERISTIC)
@@ -172,15 +189,13 @@ block script
             }
 
             await characteristic.writeValue(dataView)
-            console.log('寫入成功')
+            Swal.fire({ icon: 'succerr', text: '請再次讀取資料確認是否成功寫入' })
             this.device.gatt.disconnect() // 斷開藍芽連線
           } catch (err) {
             console.log(err.message)
-            this.device.gatt.disconnect() // 斷開藍芽連線
+            Swal.fire({ icon: 'error', title:'寫入失敗', text: err.message})
+            if (this.device) this.device.gatt.disconnect() // 斷開藍芽連線
           }
-        },
-        updateScanning () {
-          this.scanning = _.get(this, 'device.active', false)
         },
         getUint8Data (dataView, start, len) {
           return _.times(len, i => _.padStart(dataView.getUint8(start + i).toString(16), 2, '0')).join('')
