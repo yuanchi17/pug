@@ -1,9 +1,13 @@
 extends /layout
 
 block beforehtml
-  - const title = 'Beacon 設定工具'
+  -
+    const title = 'Beacon 設定工具'
+    const description = 'Beacon 設定工具'
 
 block style
+  meta(name="description" content=description)
+  meta(property="og:description", content=description)
   style
     :sass
       [v-cloak]
@@ -28,7 +32,7 @@ block content
     #beacon-list.mt-3
       .card.text-monospace
         ul.list-group
-          li.list-group-item.d-flex.flex-column(v-for="(beacon, bId) in beacons", :key=bId)
+          li.list-group-item.d-flex.flex-column(v-for="(beacon, bId) in s.beacons", :key=bId)
             .d-flex
               h5.my-auto Beacon {{ bId + 1}}
               .custom-control.custom-switch.ml-auto
@@ -59,9 +63,7 @@ block content
 block script
   script.
     const bluetooth = _.get(navigator, 'bluetooth')
-    // Device Name: Maximum 30 bytes
     const DEVICE_NAME = 'Octobeacon'
-    // UUID Generator: https://www.uuidgenerator.net/version4
     const UUID_SERVICE = '89798198-0000-0000-0000-000000000000'
     const UUID_CHARACTERISTIC = '89798198-249d-48bd-894e-db156f1a70e6'
     const SESSION_KEY = 'pug-octobeacon'
@@ -70,20 +72,20 @@ block script
       el: '#app',
       data: {
         device: null,
-        setting: {},
-        beacons: [],
+        setting: { version: '1' },
+        s: { // 欲存在 localStorage 的資料
+          beacons: [],
+        },
       },
       mounted () {
-        this.setWatchBeacons()
-      },
-      computed: {
+        this.autoSaveLocalstorage()
       },
       methods: {
-        setWatchBeacons () {
+        autoSaveLocalstorage () {
           const session = JSON.parse(localStorage.getItem(SESSION_KEY))
-          session ? this.$set(this, 'beacons', session) : this.setDefault(false)
-          this.$watch('beacons', () => {
-            localStorage.setItem(SESSION_KEY, JSON.stringify(this.beacons))
+          session ? this.$set(this, 's', session) : this.setDefault(false)
+          this.$watch('s', () => {
+            localStorage.setItem(SESSION_KEY, JSON.stringify(this.s))
           }, { deep: true })
         },
         async getBluetoothAvailability () {
@@ -91,13 +93,12 @@ block script
         },
         async btnSelectDevice () {
           try {
-            console.log('btnSelectDevice')
             this.showLoading('請稍後…')
             if (!await this.getBluetoothAvailability()) throw new Error('您的裝置不支援藍芽功能')
             await this.bluetoothRequest()
             await this.gattConnect()
             await this.btnReadValue()
-            this.showSuccess('選擇裝置成功', `已讀取裝置「${this.device.name}」的資料`)
+            Swal.fire({ icon: 'success', title: '選擇裝置成功', text: `已讀取裝置「${this.device.name}」的資料` })
           } catch (err) {
             Swal.fire({ icon: 'error', title: '選擇裝置失敗', text: err.message })
           }
@@ -111,10 +112,8 @@ block script
           }
           this.device = await bluetooth.requestDevice(options)
           if (!this.device) throw new Error('未選擇藍芽裝置')
-          this.device.addEventListener('gattserverdisconnected', console.log(`Device ${this.device.name} is disconnected.`))
         },
         async gattConnect () {
-          if (!this.device) throw new Error('未選擇藍芽裝置')
           const gattServer = await this.device.gatt.connect()
           if (!gattServer.connected) throw new Error('BluetoothRemoteGATTServer is not connected.')
           console.log('BluetoothRemoteGATTServer is connected.')
@@ -124,32 +123,30 @@ block script
             await this.checkGattConnect('讀取')
             const service = await this.device.gatt.getPrimaryService(UUID_SERVICE)
             const characteristic = await service.getCharacteristic(UUID_CHARACTERISTIC)
-
-            const readValue= await characteristic.readValue() // 型態：DataView
+            const readValue = await characteristic.readValue() // 型態：DataView
             console.log('DataView.buffer: ', readValue.buffer)
 
-            this.setting = {
+            const ts = readValue.getBigUint64(2, true) // 8 byte
+            this.$set(this, 'setting', {
               version: readValue.getUint8(0).toString(16), // 1 byte
               enabled: _.padStart(readValue.getUint8(1).toString(2), 8, '0'), // 1 byte
-              ts: readValue.getBigUint64(2, true), // 8 byte
-            }
+            })
 
             for (let i = 0; i < 8; i++) {
-              this.$set(this.beacons, i, {
+              this.$set(this.s.beacons, i, {
                 enabled: this.setting.enabled[i] === '1',
-                offset: _.padStart((readValue.getBigUint64(10 + 25 * i, true) + this.setting.ts).toString(16), 16, '0'), // 8 byte
+                offset: _.padStart((readValue.getBigUint64(10 + 25 * i, true) + ts).toString(16), 16, '0'), // 8 byte
                 hwid: this.getUint8Data(readValue, 18 + 25 * i, 5), // 5 byte
                 vendor: this.getUint8Data(readValue, 23 + 25 * i, 4), // 4 byte
                 lot: this.getUint8Data(readValue, 27 + 25 * i, 8), // 8 byte
               })
             }
-            console.log('Beacons: ', this.beacons)
-            this.showSuccess('讀取資料成功')
+            Swal.fire({ icon: 'success', title: '讀取資料成功' })
           } catch (err) {
-            console.log(err.message)
-            Swal.fire({ icon: 'error', title:'讀取失敗', text: err.message})
+            console.log(err)
+            Swal.fire({ icon: 'error', title: '讀取失敗', text: err.message })
           }
-          if (this.device) this.device.gatt.disconnect() // 斷開藍芽連線
+          if (_.get(this.device, 'gatt.connected')) this.device.gatt.disconnect() // 斷開藍芽連線
         },
         async writeValue () {
           try {
@@ -162,36 +159,32 @@ block script
             const buffer = new ArrayBuffer(210)
             const dataView = new DataView(buffer)
 
-            const enabled = _.parseInt(_.map(this.beacons, beacon => beacon.enabled ? '1' : '0').join(''), 2)
+            const beacons = this.s.beacons
+            const enabled = _.parseInt(_.map(beacons, beacon => beacon.enabled ? '1' : '0').join(''), 2)
             dataView.setUint8(0, 1) // version 1
             dataView.setUint8(1, enabled)
             dataView.setBigUint64(2, BigInt(0))
-
             for (let i = 0; i < 8; i++) {
-              const beacon = this.beacons[i]
-              dataView.setBigUint64(10 + 25 * i, BigInt('0x' + beacon.offset), true)
+              const beacon = beacons[i]
+              dataView.setBigUint64(10 + 25 * i, BigInt(`0x${beacon.offset}`), true)
               this.setUint8Data(dataView, 18 + 25 * i, beacon.hwid)
               this.setUint8Data(dataView, 23 + 25 * i, beacon.vendor)
               this.setUint8Data(dataView, 27 + 25 * i, beacon.lot)
             }
-
             await characteristic.writeValue(dataView)
-            this.showSuccess('請再次讀取資料確認是否成功寫入')
+            Swal.fire({ icon: 'success', title: '請再次讀取資料確認是否成功寫入' })
           } catch (err) {
-            console.log(err.message)
-            Swal.fire({ icon: 'error', title:'寫入失敗', text: err.message})
+            console.log(err)
+            Swal.fire({ icon: 'error', title: '寫入失敗', text: err.message })
           }
-          if (this.device) this.device.gatt.disconnect() // 斷開藍芽連線
+          if (_.get(this.device, 'gatt.connected')) this.device.gatt.disconnect() // 斷開藍芽連線
         },
         async checkGattConnect (active) { // 確認有無連線
-          console.log('checkGattConnect')
           if (_.get(this.device, 'gatt.connected')) return
-
           this.showLoading(`${active}中，請稍後…`)
           if (!await this.getBluetoothAvailability()) throw new Error('您的裝置不支援藍芽功能')
-          await this.bluetoothRequest()
+          if (_.isNil(this.device)) await this.bluetoothRequest()
           await this.gattConnect()
-          if (!this.device) throw new Error('請選擇藍芽裝置')
         },
         async setDefault (btn = true) {
           if (btn) {
@@ -204,7 +197,7 @@ block script
             })
             if (!result.value) return
           }
-          this.$set(this, 'beacons', _.times(8, i => ({
+          this.$set(this.s, 'beacons', _.times(8, i => ({
             enabled: true,
             offset: _.padStart('', 16, '0'),
             hwid: _.padStart('', 10, '0'),
@@ -221,9 +214,6 @@ block script
             willOpen: () => { Swal.showLoading() },
           })
         },
-        showSuccess (title, text) {
-          Swal.fire({ icon: 'success', title, text })
-        },
         getUint8Data (dataView, start, len) {
           return _.times(len, i => _.padStart(dataView.getUint8(start + i).toString(16), 2, '0')).join('')
         },
@@ -232,16 +222,14 @@ block script
           return _.each(chunks, (chunk, i) => dataView.setUint8(start + i, _.parseInt(chunk, 16)))
         },
         checkInput () {
-          console.log(this.setting)
-          if (this.setting.version !== 1) throw new Error(`Version 需為 1，而不是 ${this.setting.version}`)
-          for (let i=0; i<this.beacons.length; i++) {
-            const beacon = this.beacons[i]
-            if (!(/[0-9a-fA-f]{16}/).test(beacon.offset)) throw new Error(`Beacon ${i+1}：offset 格式錯誤`)
-            if (!(/[0-9a-fA-f]{10}/).test(beacon.hwid)) throw new Error(`Beacon ${i+1}：hwid 格式錯誤`)
-            if (!(/[0-9a-fA-f]{8}/).test(beacon.vendor)) throw new Error(`Beacon ${i+1}：vendor 格式錯誤`)
-            if (!(/[0-9a-fA-f]{16}/).test(beacon.lot)) throw new Error(`Beacon ${i+1}：lot 格式錯誤`)
+          if (this.setting.version !== '1') throw new Error(`Version 需為 1，而不是 ${this.setting.version}`)
+          for (let i = 0; i < this.s.beacons.length; i++) {
+            const beacon = this.s.beacons[i]
+            if (!(/[0-9a-fA-f]{16}/).test(beacon.offset)) throw new Error(`Beacon ${i + 1}：offset 格式錯誤`)
+            if (!(/[0-9a-fA-f]{10}/).test(beacon.hwid)) throw new Error(`Beacon ${i + 1}：hwid 格式錯誤`)
+            if (!(/[0-9a-fA-f]{8}/).test(beacon.vendor)) throw new Error(`Beacon ${i + 1}：vendor 格式錯誤`)
+            if (!(/[0-9a-fA-f]{16}/).test(beacon.lot)) throw new Error(`Beacon ${i + 1}：lot 格式錯誤`)
           }
         },
-        
       },
     })
