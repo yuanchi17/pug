@@ -92,10 +92,12 @@ block script
         async btnSelectDevice () {
           try {
             console.log('btnSelectDevice')
+            this.showLoading('請稍後…')
             if (!await this.getBluetoothAvailability()) throw new Error('您的裝置不支援藍芽功能')
             await this.bluetoothRequest()
             await this.gattConnect()
             await this.btnReadValue()
+            this.showSuccess('選擇裝置成功', `已讀取裝置「${this.device.name}」的資料`)
           } catch (err) {
             Swal.fire({ icon: 'error', title: '選擇裝置失敗', text: err.message })
           }
@@ -109,10 +111,7 @@ block script
           }
           this.device = await bluetooth.requestDevice(options)
           if (!this.device) throw new Error('未選擇藍芽裝置')
-          this.device.addEventListener('gattserverdisconnected', this.onDisconnected())
-        },
-        onDisconnected () {
-          console.log(`Device ${this.device.name} is disconnected.`)
+          this.device.addEventListener('gattserverdisconnected', console.log(`Device ${this.device.name} is disconnected.`))
         },
         async gattConnect () {
           if (!this.device) throw new Error('未選擇藍芽裝置')
@@ -122,7 +121,7 @@ block script
         },
         async btnReadValue () {
           try {
-            await this.checkGattConnect()
+            await this.checkGattConnect('讀取')
             const service = await this.device.gatt.getPrimaryService(UUID_SERVICE)
             const characteristic = await service.getCharacteristic(UUID_CHARACTERISTIC)
 
@@ -145,6 +144,7 @@ block script
               })
             }
             console.log('Beacons: ', this.beacons)
+            this.showSuccess('讀取資料成功')
           } catch (err) {
             console.log(err.message)
             Swal.fire({ icon: 'error', title:'讀取失敗', text: err.message})
@@ -154,7 +154,7 @@ block script
         async writeValue () {
           try {
             this.checkInput() // 檢查格式
-            await this.checkGattConnect()
+            await this.checkGattConnect('寫入')
             const service = await this.device.gatt.getPrimaryService(UUID_SERVICE)
             const characteristic = await service.getCharacteristic(UUID_CHARACTERISTIC)
 
@@ -176,16 +176,18 @@ block script
             }
 
             await characteristic.writeValue(dataView)
-            Swal.fire({ icon: 'succerr', text: '請再次讀取資料確認是否成功寫入' })
+            this.showSuccess('請再次讀取資料確認是否成功寫入')
           } catch (err) {
             console.log(err.message)
             Swal.fire({ icon: 'error', title:'寫入失敗', text: err.message})
           }
           if (this.device) this.device.gatt.disconnect() // 斷開藍芽連線
         },
-        async checkGattConnect () { // 確認有無連線
+        async checkGattConnect (active) { // 確認有無連線
           console.log('checkGattConnect')
           if (_.get(this.device, 'gatt.connected')) return
+
+          this.showLoading(`${active}中，請稍後…`)
           if (!await this.getBluetoothAvailability()) throw new Error('您的裝置不支援藍芽功能')
           await this.bluetoothRequest()
           await this.gattConnect()
@@ -210,6 +212,18 @@ block script
             lot: _.padStart('', 16, '0'),
           })))
         },
+        showLoading (title, text) {
+          Swal.fire({
+            title,
+            text,
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            willOpen: () => { Swal.showLoading() },
+          })
+        },
+        showSuccess (title, text) {
+          Swal.fire({ icon: 'success', title, text })
+        },
         getUint8Data (dataView, start, len) {
           return _.times(len, i => _.padStart(dataView.getUint8(start + i).toString(16), 2, '0')).join('')
         },
@@ -218,6 +232,8 @@ block script
           return _.each(chunks, (chunk, i) => dataView.setUint8(start + i, _.parseInt(chunk, 16)))
         },
         checkInput () {
+          console.log(this.setting)
+          if (this.setting.version !== 1) throw new Error(`Version 需為 1，而不是 ${this.setting.version}`)
           for (let i=0; i<this.beacons.length; i++) {
             const beacon = this.beacons[i]
             if (!(/[0-9a-fA-f]{16}/).test(beacon.offset)) throw new Error(`Beacon ${i+1}：offset 格式錯誤`)
