@@ -22,7 +22,7 @@ block content
       small.text-center.m-0.mb-2.text-muted Version {{ setting.version || 1}}
       .d-flex.justify-content-center.mt-2
         button.btn.btn-outline-success.btn-sm.mx-1.mb-2(type="button" @click="btnSelectDevice") 選擇裝置
-        button.btn.btn-outline-primary.btn-sm.mx-1.mb-2(type="button" @click="readValue") 讀取資料
+        button.btn.btn-outline-primary.btn-sm.mx-1.mb-2(type="button" @click="btnReadValue") 讀取資料
         button.btn.btn-outline-danger.btn-sm.mx-1.mb-2(type="button" @click="writeValue") 寫入資料
         button.btn.btn-outline-secondary.btn-sm.mx-1.mb-2(type="button" @click="setDefault") 回復預設
     #beacon-list.mt-3
@@ -72,7 +72,6 @@ block script
         device: null,
         setting: {},
         beacons: [],
-        scanning: false,
       },
       mounted () {
         this.setWatchBeacons()
@@ -82,7 +81,7 @@ block script
       methods: {
         setWatchBeacons () {
           const session = JSON.parse(localStorage.getItem(SESSION_KEY))
-          session ? this.$set(this, 'beacons', session) : this.setDefault()
+          session ? this.$set(this, 'beacons', session) : this.setDefault(false)
           this.$watch('beacons', () => {
             localStorage.setItem(SESSION_KEY, JSON.stringify(this.beacons))
           }, { deep: true })
@@ -93,15 +92,10 @@ block script
         async btnSelectDevice () {
           try {
             console.log('btnSelectDevice')
-            this.updateScanning()
-            if (!this.scanning) {
-              if (!await this.getBluetoothAvailability()) throw new Error('您的裝置不支援藍芽功能')
-              await this.bluetoothRequest()
-              await this.gattConnect()
-            } else { // 停止掃描
-              this.device.stop()
-              this.device = null
-            }
+            if (!await this.getBluetoothAvailability()) throw new Error('您的裝置不支援藍芽功能')
+            await this.bluetoothRequest()
+            await this.gattConnect()
+            await this.btnReadValue()
           } catch (err) {
             Swal.fire({ icon: 'error', title: '選擇裝置失敗', text: err.message })
           }
@@ -125,16 +119,15 @@ block script
           const gattServer = await this.device.gatt.connect()
           if (!gattServer.connected) throw new Error('BluetoothRemoteGATTServer is not connected.')
           console.log('BluetoothRemoteGATTServer is connected.')
-          await this.readValue()
         },
-        async readValue () {
+        async btnReadValue () {
           try {
             await this.checkGattConnect()
             const service = await this.device.gatt.getPrimaryService(UUID_SERVICE)
             const characteristic = await service.getCharacteristic(UUID_CHARACTERISTIC)
 
-            const readValue = await characteristic.readValue() // DataView
-            console.log('ReadValue: ', readValue.buffer)
+            const readValue= await characteristic.readValue() // 型態：DataView
+            console.log('DataView.buffer: ', readValue.buffer)
 
             this.setting = {
               version: readValue.getUint8(0).toString(16), // 1 byte
@@ -191,18 +184,24 @@ block script
           if (this.device) this.device.gatt.disconnect() // 斷開藍芽連線
         },
         async checkGattConnect () { // 確認有無連線
-          await this.btnSelectDevice()
+          console.log('checkGattConnect')
+          if (_.get(this.device, 'gatt.connected')) return
+          if (!await this.getBluetoothAvailability()) throw new Error('您的裝置不支援藍芽功能')
+          await this.bluetoothRequest()
+          await this.gattConnect()
           if (!this.device) throw new Error('請選擇藍芽裝置')
         },
-        async setDefault () {
-          const result = await Swal.fire({
-            icon: 'warning',
-            text: '確定要清除資料回復預設值？',
-            showCancelButton: true,
-            confirmButtonText: '回復預設',
-            cancelButtonText: '保留資料',
-          })
-          if (!result.value) return
+        async setDefault (btn = true) {
+          if (btn) {
+            const result = await Swal.fire({
+              icon: 'warning',
+              text: '確定要清除資料回復預設值？',
+              showCancelButton: true,
+              confirmButtonText: '回復預設',
+              cancelButtonText: '保留資料',
+            })
+            if (!result.value) return
+          }
           this.$set(this, 'beacons', _.times(8, i => ({
             enabled: true,
             offset: _.padStart('', 16, '0'),
@@ -210,9 +209,6 @@ block script
             vendor: _.padStart('', 8, '0'),
             lot: _.padStart('', 16, '0'),
           })))
-        },
-        updateScanning () {
-          this.scanning = _.get(this, 'device.active', false)
         },
         getUint8Data (dataView, start, len) {
           return _.times(len, i => _.padStart(dataView.getUint8(start + i).toString(16), 2, '0')).join('')
