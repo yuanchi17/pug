@@ -1,7 +1,13 @@
 extends /layout
 
 block beforehtml
-  - const title = '猜數字遊戲'
+  -
+    const title = '1A2B 解題工具'
+    const description = '快來成為 1A2B 解題達人吧！'
+
+block style
+  meta(name="description" content=description)
+  meta(property="og:description", content=description)
 
 block style
   style

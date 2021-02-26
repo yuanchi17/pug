@@ -1,7 +1,13 @@
 extends /layout
 
 block beforehtml
-  - const title = '狼人殺'
+  -
+    const title = '狼人殺'
+    const description = '少一個人主持狼人殺嗎？我來幫你主持！'
+
+block style
+  meta(name="description" content=description)
+  meta(property="og:description", content=description)
 
 block style
   style

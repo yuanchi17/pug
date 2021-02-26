@@ -1,7 +1,13 @@
 extends /layout
 
 block beforehtml
-  - const title = '代辦事項'
+  -
+    const title = '代辦事項'
+    const description = '代辦事項'
+
+block style
+  meta(name="description" content=description)
+  meta(property="og:description", content=description)
 
 block style
   style

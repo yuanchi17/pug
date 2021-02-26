@@ -2,10 +2,14 @@ doctype html
 block beforehtml
 html
   head
+    title= title
+    link(rel="icon" href="https://i.imgur.com/uvL7e25.png" type="image/x-icon")
     meta(charset="UTF-8")
     meta(http-equiv="X-UA-Compatible", content="IE=edge")
     meta(name="viewport", content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no")
-    title= title
+    meta(property="og:image:height", content="256")
+    meta(property="og:image:width", content="256")
+    meta(property="og:image" content="https://i.imgur.com/5HW3ZHE.png")
     script.
       (function () {
         const host = location.host.split(':')[0]

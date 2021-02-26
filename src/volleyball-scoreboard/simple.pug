@@ -1,7 +1,13 @@
 extends ../layout
 
 block beforehtml
-  - const title = '排球記分板'
+  -
+    const title = '排球記分板'
+    const description = '排球記分板簡易版'
+
+block style
+  meta(name="description" content=description)
+  meta(property="og:description", content=description)
 
 block style
   style

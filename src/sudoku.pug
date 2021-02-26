@@ -1,9 +1,13 @@
 extends /layout
 
 block beforehtml
-  - const title = '數獨'
+  -
+    const title = '數獨'
+    const description = '數獨'
 
 block style
+  meta(name="description" content=description)
+  meta(property="og:description", content=description)
   style
     :sass
       [v-cloak]
