@@ -14,6 +14,7 @@ module.exports = {
     axios: 'readonly',
     moment: 'readonly',
     Papa: 'readonly',
+    Qs: 'readonly',
     Swal: 'readonly',
     Vue: 'readonly',
   },

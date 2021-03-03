@@ -1,0 +1,100 @@
+extends /layout
+
+block beforehtml
+  -
+    const title = 'LINE Notify 發送訊息'
+    const description = 'LINE Notify 發送訊息'
+
+block style
+  meta(name="description" content=description)
+  meta(property="og:description", content=description)
+  style
+    :sass
+      [v-cloak]
+        display: none
+
+block content
+  include /navbar
+  #app.content.container.p-3(v-cloak)
+    h3 LINE Notify 發送訊息工具
+    .form-group 
+      label(for="inputCsv") CSV 網址
+      input.form-control(type="email" id="inputCsv" v-model="s.csv")
+    .form-group 
+      label(for="inputMsg") 推送訊息內容（{{ s.message.length }}／1000）
+      textarea.form-control(type="text" id="inputMsg" v-model="s.message")
+    .row
+      .col-6.col-sm-4
+        .form-group
+          label(for="inputStickerPackageId") StickerPackageId
+          input.form-control(type="email" id="inputStickerPackageId" v-model="s.stickerPackageId")
+      .col-6.col-sm-4
+        .form-group
+          label(for="inputStickerId") StickerId
+          input.form-control(type="email" id="inputStickerId" v-model="s.stickerId")
+      .col-12.col-sm-4
+        .form-group 
+          label(for="inputImg") 推送圖片（HTTP/HTTPS URL）
+          input.form-control(type="text" id="inputImg" v-model="s.img")
+    button.btn.btn-primary(type="button" @click="btnPushMsg") 推送訊息
+
+block script
+  script.
+    const SESSION_KEY = 'pug-line-notify-push-template'
+    window.vm = new Vue({
+      el: '#app',
+      data: {
+        s: {
+          csv: 'https://gist.githubusercontent.com/yuanchi17/0b29d4b9a24591c426ac233887cfbeec/raw/test.csv',
+          message: '（預設） LINE Notify 發送訊息',
+          stickerPackageId: 2,
+          stickerId: 520,
+          img: 'https://i.imgur.com/R6zmln4.png',
+        },
+      },
+      mounted () {
+        this.autoSaveLocalstorage()
+      },
+      computed: {
+      },
+      methods: {
+        autoSaveLocalstorage () {
+          const session = JSON.parse(localStorage.getItem(SESSION_KEY))
+          if (session) this.$set(this, 's', session)
+          this.$watch('s', () => {
+            localStorage.setItem(SESSION_KEY, JSON.stringify(this.s))
+          }, { deep: true })
+        },
+        async btnPushMsg () {
+          try {
+            const pushData = this.s
+            const rows = await this.getCsv(pushData.csv)
+            const message = _.template(pushData.message)({row})
+
+            await Promise.all(_.map(rows, row => {
+              axios.post('https://us-central1-yuanchi.cloudfunctions.net/cors-anywhere', Qs.stringify({
+                message,
+                imageFullsize: pushData.img,
+                imageThumbnail: pushData.img,
+                stickerId: pushData.stickerId,
+                stickerPackageId: pushData.stickerPackageId,
+              }), {
+                params: { u: 'https://notify-api.line.me/api/notify' },
+                headers: {
+                  Authorization: `Bearer ${row.access_token}`,
+                },
+              })
+            }))
+          } catch (err) {
+            Swal.fire({ icon: 'error', title: '推送失敗', text: _.get(err, 'message', err) })
+          }
+        },
+        async getCsv (url) {
+          const csv = _.trim(_.get(await axios.get(url), 'data')) // _.trim：把前後多餘的空格修掉
+          return _.get(Papa.parse(csv, {
+            encoding: 'utf8',
+            header: true,
+          }), 'data', [])
+        },
+      },
+    })
