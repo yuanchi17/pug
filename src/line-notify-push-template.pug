@@ -2,8 +2,8 @@ extends /layout
 
 block beforehtml
   -
-    const title = 'LINE Notify 發送訊息'
-    const description = 'LINE Notify 發送訊息'
+    const title = 'LINE Notify 推送訊息工具'
+    const description = 'LINE Notify 推送訊息工具'
 
 block style
   meta(name="description" content=description)
@@ -16,23 +16,23 @@ block style
 block content
   include /navbar
   #app.content.container.p-3(v-cloak)
-    h3 LINE Notify 發送訊息工具
-    .form-group 
-      label(for="inputCsv") CSV 網址
-      input.form-control(type="email" id="inputCsv" v-model="s.csv")
+    h3 LINE Notify 推送訊息工具
+    .form-group
+      label(for="inputCsv") CSV 網址（資料會放到參數 #[span.text-danger row]，且以第一列當作 key）
+      input.form-control(type="text" id="inputCsv" v-model="s.csv")
     .form-group 
       label(for="inputMsg") 推送訊息內容（{{ s.message.length }}／1000）
-      textarea.form-control(type="text" id="inputMsg" v-model="s.message")
+      textarea.form-control(type="text" id="inputMsg" v-model="s.message" maxlength='1000')
     .row
-      .col-6.col-sm-4
+      .col-6.col-lg-4
         .form-group
           label(for="inputStickerPackageId") StickerPackageId
           input.form-control(type="email" id="inputStickerPackageId" v-model="s.stickerPackageId")
-      .col-6.col-sm-4
+      .col-6.col-lg-4
         .form-group
           label(for="inputStickerId") StickerId
           input.form-control(type="email" id="inputStickerId" v-model="s.stickerId")
-      .col-12.col-sm-4
+      .col-12.col-lg-4
         .form-group 
           label(for="inputImg") 推送圖片（HTTP/HTTPS URL）
           input.form-control(type="text" id="inputImg" v-model="s.img")
@@ -44,9 +44,10 @@ block script
     window.vm = new Vue({
       el: '#app',
       data: {
+        status: '',
         s: {
           csv: 'https://gist.githubusercontent.com/yuanchi17/0b29d4b9a24591c426ac233887cfbeec/raw/test.csv',
-          message: '（預設） LINE Notify 發送訊息',
+          message: '（預設） LINE Notify 推送訊息',
           stickerPackageId: 2,
           stickerId: 520,
           img: 'https://i.imgur.com/R6zmln4.png',
@@ -68,6 +69,12 @@ block script
         async btnPushMsg () {
           try {
             const pushData = this.s
+
+            if (!(/^\https:.*\.csv$/).test(pushData.csv)) throw new Error("請輸入正確的 CSV 網址")
+            if (!pushData.message) throw new Error("推送訊息內容不可為空")
+
+            // TODO: 提示窗
+            this.status = "讀取 CSV 中"
             const rows = await this.getCsv(pushData.csv)
             const message = _.template(pushData.message)({row})
 
