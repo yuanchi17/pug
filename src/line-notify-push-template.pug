@@ -24,33 +24,41 @@ block content
     .form-group
       label(for="inputCsv") CSV 網址（資料會放到參數 #[span.text-danger row]，且以第一列當作 key）
       input.form-control(type="text" id="inputCsv" v-model="s.csv")
-    .row
-      .col-12.col-lg-4
-        .form-group
-          label(for="inputStickerPackageId") StickerPackageId（#[a.btn.btn-link.p-0(href="https://developers.line.biz/media/messaging-api/sticker_list.pdf") Sticker List]）
-          input.form-control(type="email" id="inputStickerPackageId" v-model="s.stickerPackageId")
-      .col-12.col-lg-4
-        .form-group
-          label(for="inputStickerId") StickerId（#[a.btn.btn-link.p-0(href="https://developers.line.biz/media/messaging-api/sticker_list.pdf") Sticker List]）
-          input.form-control(type="email" id="inputStickerId" v-model="s.stickerId")
-      .col-12.col-lg-4
+    .card.mb-3(v-for="(msg, msgId) in s.msgs" :key="msgId")
+      .card-body
+        .d-flex.mb-3
+          h5.card-title.my-auto 第 {{ msgId+1 }} 筆訊息
+          i.fa.fa-trash-o.btn.btn-danger.ml-auto(type="button" @click="btnDelMsg(msgId)")
+            span.pl-2 移除
+        .row
+          .col-12.col-lg-4
+            .form-group
+              label(:for="`inputStickerPackageId-${msgId}`") StickerPackageId（#[a.btn.btn-link.p-0(href="https://developers.line.biz/media/messaging-api/sticker_list.pdf") Sticker List]）
+              input.form-control(type="email" :id="`inputStickerPackageId-${msgId}`" v-model="msg.stickerPackageId")
+          .col-12.col-lg-4
+            .form-group
+              label(:for="`inputStickerId-${msgId}`") StickerId（#[a.btn.btn-link.p-0(href="https://developers.line.biz/media/messaging-api/sticker_list.pdf") Sticker List]）
+              input.form-control(type="email" :id="`inputStickerId-${msgId}`" v-model="msg.stickerId")
+          .col-12.col-lg-4
+            .form-group 
+              label(:for="`inputImg-${msgId}`") 圖片連結（HTTP／HTTPS）
+              input.form-control(type="text" :id="`inputImg-${msgId}`" v-model="msg.img")
         .form-group 
-          label(for="inputImg") 圖片連結（HTTP／HTTPS）
-          input.form-control(type="text" id="inputImg" v-model="s.img")
-    .form-group 
-      label(for="inputMsg") 推送訊息內容（{{ s.message.length }}／1000）
-      textarea.form-control(type="text" id="inputMsg" v-model="s.message" maxlength='1000')
+          label(:for="`inputMsg-${msgId}`") 推送訊息內容（{{ msg.message.length }}／1000）
+          textarea.form-control(type="text" :id="`inputMsg-${msgId}`" v-model="msg.message" maxlength='1000')
     .alert.alert-danger.alert-dismissible.fade.show.mt-3(role="alert" v-if="errors")
       p.m-0 {{ errors }}#[br]欲了解詳細錯誤資訊，請按 F12 查看 Console
       button.close(type="button" data-dismiss="alert" aria-label="Close" @click="errors = ''")
         span(aria-hidden) &times;
     .alert.alert-success.alert-dismissible.fade.show.mt-3(role="alert" v-if="pushStatus.finish && pushStatus.success > 0")
-      p.m-0 成功推送 {{ pushStatus.success }}／{{ pushStatus.total }} 筆資料
+      p.m-0 成功推送給 {{ pushStatus.success }}／{{ pushStatus.userCount }} 位使用者 {{ s.msgs.length }} 筆訊息
       button.close(type="button" data-dismiss="alert" aria-label="Close")
         span(aria-hidden) &times;
-    button.btn.btn-danger(type="button" disabled v-if="status") {{ status }}
-    button.btn.btn-danger(type="button" @click="btnPushMsg" v-else) 推送訊息
-    a.btn.btn-outline-primary.mx-2(type="button" href="https://notify-bot.line.me/doc/en/") Notify API 文件
+    button.btn.btn-danger.mr-3(type="button" disabled v-if="status") {{ status }}
+    .d-flex(v-else)
+      button.btn.btn-danger.mr-3(type="button" @click="btnPushMsg" v-if="s.msgs.length > 0") 推送訊息
+      button.btn.btn-success.mr-3(type="button" @click="btnAddMsg") 新增推送訊息
+      a.btn.btn-outline-primary(type="button" href="https://notify-bot.line.me/doc/en/") Notify API 文件
 
 block script
   script.
@@ -63,10 +71,14 @@ block script
         status: '', // 當前狀態
         s: {
           csv: '',
-          img: 'https://i.imgur.com/o0tEo3q.png',
-          message: '嗨～這是傳給 ${row.name} 的預設推送訊息\n\n請自行更改訊息內容：）', // eslint-disable-line
-          stickerId: 520,
-          stickerPackageId: 2,
+          msgs: [
+            {
+              img: 'https://i.imgur.com/o0tEo3q.png',
+              message: '嗨～這是傳給 ${row.name} 的預設推送訊息\n\n請自行更改訊息內容：）', // eslint-disable-line
+              stickerId: 520,
+              stickerPackageId: 2,
+            },
+          ],
         },
       },
       mounted () {
@@ -83,12 +95,14 @@ block script
         async btnPushMsg () {
           this.errors = ''
           const errors = []
-          this.pushStatus = { success: 0, count: 0, total: 0, finish: false }
+          this.pushStatus = { success: 0, count: 0, userCount: 0, finish: false }
           try {
             const pushData = this.s
 
-            if (!pushData.message) throw new Error('推送訊息內容不可為空')
-            if (!!pushData.stickerPackageId ^ !!pushData.stickerId) throw new Error('若要推送貼圖，StickerPackageId 及 StickerId 不可為空')
+            for (const msg of pushData.msgs) {
+              if (!msg.message) throw new Error('推送訊息內容不可為空')
+              if (!!msg.stickerPackageId ^ !!msg.stickerId) throw new Error('若要推送貼圖，StickerPackageId 及 StickerId 不可為空')
+            }
 
             this.status = '讀取 CSV 中'
             const rows = await this.getCsv(pushData.csv)
@@ -96,11 +110,11 @@ block script
 
             this.status = '確認推送筆數'
             const pushStatus = this.pushStatus
-            pushStatus.total = rows.length
+            pushStatus.userCount = rows.length
             const result = await Swal.fire({
               icon: 'warning',
               title: '準備推送訊息',
-              text: `即將推送 ${pushStatus.total} 筆資料！`,
+              text: `即將推送給 ${pushStatus.userCount} 位使用者 ${pushData.msgs.length} 筆訊息！`,
               showCancelButton: true,
               showConfirmButton: false,
               showDenyButton: true,
@@ -112,26 +126,25 @@ block script
             for (const row of rows) {
               try {
                 pushStatus.count++
-                this.status = `推送訊息中（${pushStatus.count}／${pushStatus.total}）`
-                const message = _.template(pushData.message)({ row })
 
-                await axios.post('https://us-central1-yuanchi.cloudfunctions.net/cors-anywhere', Qs.stringify({
-                  message,
-                  imageFullsize: pushData.img,
-                  imageThumbnail: pushData.img,
-                  stickerId: pushData.stickerId,
-                  stickerPackageId: pushData.stickerPackageId,
-                }), {
-                  params: { u: 'https://notify-api.line.me/api/notify' },
-                  headers: {
-                    Authorization: `Bearer ${row.access_token}`,
-                  },
-                })
+                for (const i in pushData.msgs) {
+                  const msg = pushData.msgs[i]
+                  this.status = `正在推送給第 ${pushStatus.count}／${pushStatus.userCount} 位使用者，第 ${parseInt(i) + 1} 筆訊息`
+                  const message = _.template(msg.message)({ row })
+                  await this.notify({
+                    accessToken: row.access_token,
+                    message,
+                    imageFullsize: msg.img,
+                    imageThumbnail: msg.img,
+                    stickerId: msg.stickerId,
+                    stickerPackageId: msg.stickerPackageId,
+                  })
+                }
                 pushStatus.success++ // 推送成功
               } catch (err) {
                 err.message = _.get(err, 'response.data.message', err.message)
                 if (_.get(err, 'response.data.status') === 400) throw new Error(`推送訊息格式錯誤：${err.message}`)
-                errors.push(`第 ${pushStatus.count} 筆推送失敗：${err.message}`)
+                errors.push(`第 ${pushStatus.count} 位使用者訊息推送失敗：${err.message}`)
                 console.log(err)
               }
             }
@@ -143,6 +156,31 @@ block script
           this.status = ''
           this.errors = errors.join('\n')
           this.pushStatus.finish = true
+        },
+        async btnAddMsg () {
+          this.s.msgs.push({
+            img: '',
+            message: '',
+            stickerId: '',
+            stickerPackageId: '',
+          })
+        },
+        async btnDelMsg (msgId) {
+          this.s.msgs.splice(msgId, 1)
+        },
+        async notify ({ accessToken, message, imageFullsize, imageThumbnail, stickerId, stickerPackageId }) {
+          await axios.post('https://us-central1-yuanchi.cloudfunctions.net/cors-anywhere', Qs.stringify({
+            message,
+            imageFullsize,
+            imageThumbnail,
+            stickerId,
+            stickerPackageId,
+          }), {
+            params: { u: 'https://notify-api.line.me/api/notify' },
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          })
         },
         async getCsv (url) {
           const csv = _.trim(_.get(await axios.get(url), 'data')) // _.trim：把前後多餘的空格修掉
