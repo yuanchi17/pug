@@ -19,17 +19,17 @@ block style
 
 block content
   include /navbar
-  #app.content.container.text-monospace(v-cloak)
+  #app.content.container.text-monospace.mb-3(v-cloak)
     h2.py-3.m-0 LINE Notify 推送訊息工具
     .form-group
       label(for="inputCsv") CSV 網址（資料會放到參數 #[span.text-danger row]，且以第一列當作 key）
       input.form-control(type="text" id="inputCsv" v-model="s.csv")
     .row
-      .col-6.col-lg-4
+      .col-12.col-lg-4
         .form-group
           label(for="inputStickerPackageId") StickerPackageId（#[a.btn.btn-link.p-0(href="https://developers.line.biz/media/messaging-api/sticker_list.pdf") Sticker List]）
           input.form-control(type="email" id="inputStickerPackageId" v-model="s.stickerPackageId")
-      .col-6.col-lg-4
+      .col-12.col-lg-4
         .form-group
           label(for="inputStickerId") StickerId（#[a.btn.btn-link.p-0(href="https://developers.line.biz/media/messaging-api/sticker_list.pdf") Sticker List]）
           input.form-control(type="email" id="inputStickerId" v-model="s.stickerId")
@@ -44,13 +44,13 @@ block content
       p.m-0 {{ errors }}#[br]欲了解詳細錯誤資訊，請按 F12 查看 Console
       button.close(type="button" data-dismiss="alert" aria-label="Close" @click="errors = ''")
         span(aria-hidden) &times;
-    .alert.alert-success.alert-dismissible.fade.show.mt-3(role="alert" v-if="pushStatus.finish && pushStatus.total > 1")
+    .alert.alert-success.alert-dismissible.fade.show.mt-3(role="alert" v-if="pushStatus.finish && pushStatus.success > 0")
       p.m-0 成功推送 {{ pushStatus.success }}／{{ pushStatus.total }} 筆資料
       button.close(type="button" data-dismiss="alert" aria-label="Close")
         span(aria-hidden) &times;
     button.btn.btn-danger(type="button" disabled v-if="status") {{ status }}
     button.btn.btn-danger(type="button" @click="btnPushMsg" v-else) 推送訊息
-    a.btn.btn-outline-info.mx-2(type="button" href="https://notify-bot.line.me/doc/en/") Notify API 文件
+    a.btn.btn-outline-primary.mx-2(type="button" href="https://notify-bot.line.me/doc/en/") Notify API 文件
 
 block script
   script.
