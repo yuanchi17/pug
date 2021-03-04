@@ -28,7 +28,7 @@ block content
       .card-body
         .d-flex.mb-3
           h5.card-title.my-auto 第 {{ msgId+1 }} 筆訊息
-          i.fa.fa-trash-o.btn.btn-danger.ml-auto(type="button" @click="btnDelMsg(msgId)")
+          button.btn.btn-danger.ml-auto(type="button" @click="btnDelMsg(msgId)") #[i.fa.fa-trash-o]
             span.pl-2 移除
         .row
           .col-12.col-lg-4
@@ -58,7 +58,7 @@ block content
     .d-flex(v-else)
       button.btn.btn-danger.mr-3(type="button" @click="btnPushMsg" v-if="s.msgs.length > 0") 推送訊息
       button.btn.btn-success.mr-3(type="button" @click="btnAddMsg") 新增推送訊息
-      a.btn.btn-outline-primary(type="button" href="https://notify-bot.line.me/doc/en/") Notify API 文件
+      a.btn.btn-outline-primary(target="_blank" href="https://notify-bot.line.me/doc/en/") Notify API 文件
 
 block script
   script.
