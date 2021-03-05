@@ -15,7 +15,7 @@ block style
       .alert
         white-space: pre-wrap
       textarea
-        min-height: 400px
+        min-height: 300px
 
 block content
   include /navbar
@@ -23,29 +23,31 @@ block content
     h2.py-3.m-0 LINE Notify 推送訊息工具
     .form-group
       label(for="inputCsv") CSV 網址（資料會放到參數 #[span.text-danger row]，且以第一列當作 key）
-      input.form-control(type="text" id="inputCsv" v-model="s.csv")
+      input.form-control(type="text" id="inputCsv" v-model="s.csv" placeholder="請填寫 CSV 網址")
     .card.mb-3(v-for="(msg, msgId) in s.msgs" :key="msgId")
       .card-body
         .d-flex.mb-3
-          h5.card-title.my-auto 第 {{ msgId+1 }} 筆訊息
-          button.btn.btn-danger.ml-auto(type="button" @click="btnDelMsg(msgId)") #[i.fa.fa-trash-o]
+          h5.card-title.mt-auto.mb-0 第 {{ msgId+1 }} 筆訊息
+          button.btn.btn-danger.btn-sm.ml-auto(type="button" @click="btnDelMsg(msgId)") #[i.fa.fa-trash-o]
             span.pl-2 移除
         .row
           .col-12.col-lg-4
             .form-group
-              label(:for="`inputStickerPackageId-${msgId}`") StickerPackageId（#[a.btn.btn-link.p-0(href="https://developers.line.biz/media/messaging-api/sticker_list.pdf") Sticker List]）
-              input.form-control(type="email" :id="`inputStickerPackageId-${msgId}`" v-model="msg.stickerPackageId")
+              label(:for="`inputStickerPackageId-${msgId}`") StickerPackageId
+              button.btn.btn-link.py-0(type="button" @click="btnStickerTeach") #[i.fa.fa-question-circle-o]
+              input.form-control(type="text" :id="`inputStickerPackageId-${msgId}`" v-model="msg.stickerPackageId" placeholder="（選填）")
           .col-12.col-lg-4
             .form-group
-              label(:for="`inputStickerId-${msgId}`") StickerId（#[a.btn.btn-link.p-0(href="https://developers.line.biz/media/messaging-api/sticker_list.pdf") Sticker List]）
-              input.form-control(type="email" :id="`inputStickerId-${msgId}`" v-model="msg.stickerId")
+              label(:for="`inputStickerId-${msgId}`") StickerId
+              button.btn.btn-link.py-0(type="button" @click="btnStickerTeach") #[i.fa.fa-question-circle-o]
+              input.form-control(type="text" :id="`inputStickerId-${msgId}`" v-model="msg.stickerId" placeholder="（選填）")
           .col-12.col-lg-4
             .form-group 
               label(:for="`inputImg-${msgId}`") 圖片連結（HTTP／HTTPS）
-              input.form-control(type="text" :id="`inputImg-${msgId}`" v-model="msg.img")
+              input.form-control(type="text" :id="`inputImg-${msgId}`" v-model="msg.img" placeholder="（選填）")
         .form-group 
           label(:for="`inputMsg-${msgId}`") 推送訊息內容（{{ msg.message.length }}／1000）
-          textarea.form-control(type="text" :id="`inputMsg-${msgId}`" v-model="msg.message" maxlength='1000')
+          textarea.form-control(type="text" :id="`inputMsg-${msgId}`" v-model="msg.message" maxlength='1000' placeholder="（必填，可填寫空格）")
     .alert.alert-danger.alert-dismissible.fade.show.mt-3(role="alert" v-if="errors")
       p.m-0 {{ errors }}#[br]欲了解詳細錯誤資訊，請按 F12 查看 Console
       button.close(type="button" data-dismiss="alert" aria-label="Close" @click="errors = ''")
@@ -58,7 +60,8 @@ block content
     .d-flex(v-else)
       button.btn.btn-danger.mr-3(type="button" @click="btnPushMsg" v-if="s.msgs.length > 0") 推送訊息
       button.btn.btn-success.mr-3(type="button" @click="btnAddMsg") 新增推送訊息
-      a.btn.btn-outline-primary(target="_blank" href="https://notify-bot.line.me/doc/en/") Notify API 文件
+      a.btn.btn-outline-info.mr-3(target="_blank" href="https://line.me/R/ti/p/@736cebrk") Flex 開發人員工具
+      a.btn.btn-outline-info(target="_blank" href="https://notify-bot.line.me/doc/en/") Notify API 文件
 
 block script
   script.
@@ -75,8 +78,8 @@ block script
             {
               img: 'https://i.imgur.com/o0tEo3q.png',
               message: '嗨～這是傳給 ${row.name} 的預設推送訊息\n\n請自行更改訊息內容：）', // eslint-disable-line
-              stickerId: 520,
-              stickerPackageId: 2,
+              stickerId: 106,
+              stickerPackageId: 1,
             },
           ],
         },
@@ -190,5 +193,16 @@ block script
             header: true,
           }), 'data', [])
         },
+        async btnStickerTeach () {
+          const result = await Swal.fire({
+            icon: 'info',
+            title: 'Sticker 查找教學',
+            text: '使用「Flex 開發人員工具」傳送貼圖，即可找到 stickerId 及 packageId',
+            showCancelButton: true,
+            cancelButtonText: '關閉',
+            confirmButtonText: '使用',
+          })
+          if (result.value) window.open("https://line.me/R/ti/p/@736cebrk")
+        }
       },
     })
