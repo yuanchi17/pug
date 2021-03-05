@@ -107,6 +107,7 @@ block script
             this.status = '讀取 CSV 中'
             const rows = await this.getCsv(pushData.csv)
             if (rows.length < 1) throw new Error('無法從此 CSV 內讀取資料')
+            if (!rows.access_token) throw new Error('CSV 格式錯誤：缺少參數「access_token」')
 
             this.status = '確認推送筆數'
             const pushStatus = this.pushStatus
