@@ -57,18 +57,18 @@ block content
       button.close(type="button" data-dismiss="alert" aria-label="Close")
         span(aria-hidden) &times;
     button.btn.btn-danger.mr-3(type="button" disabled v-if="status") {{ status }}
-    .d-flex(v-else)
-      button.btn.btn-danger.mr-3(type="button" @click="btnShareMsg" v-if="s.msgs.length > 0") 分享測試訊息
-      button.btn.btn-danger.mr-3(type="button" @click="btnPushMsg" v-if="s.msgs.length > 0") 推送訊息
-      button.btn.btn-success.mr-3(type="button" @click="btnAddMsg") 新增推送訊息
-      a.btn.btn-outline-info.mr-3(target="_blank" href="https://line.me/R/ti/p/@736cebrk" data-toggle="tooltip" data-placement="top" title="by 和風信使 taichunmin") Flex 開發人員工具
-      a.btn.btn-outline-info(target="_blank" href="https://notify-bot.line.me/doc/en/") Notify API 文件
+    .row-n2(v-else)
+      button.btn.btn-danger.mx-2.my-1(type="button" @click="btnPushMsg" v-if="s.msgs.length > 0") 推送訊息
+      button.btn.btn-danger.mx-2.my-1(type="button" @click="btnShareMsg" v-if="s.msgs.length > 0") 分享測試訊息
+      button.btn.btn-success.mx-2.my-1(type="button" @click="btnAddMsg") 新增推送訊息
+      a.btn.btn-outline-info.mx-2.my-1(target="_blank" href="https://line.me/R/ti/p/@736cebrk" data-toggle="tooltip" data-placement="top" title="by 和風信使 taichunmin") Flex 開發人員工具
+      a.btn.btn-outline-info.mx-2.my-1(target="_blank" href="https://notify-bot.line.me/doc/en/") Notify API 文件
 
 block script
   script(src="https://static.line-scdn.net/liff/edge/2/sdk.js")
   script.
     const loginPromise = (async () => {
-      await liff.init({ liffId: '#{LIFFID_FULL}' })
+      await liff.init({ liffId: '1654061069-YXLwqzBw' })
       if (!liff.isLoggedIn()) {
         liff.login({ redirectUri: location.href })
         return await new Promise(resolve => {}) // 永遠不會結束的 Promise
