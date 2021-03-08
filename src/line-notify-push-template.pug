@@ -58,9 +58,9 @@ block content
         span(aria-hidden) &times;
     button.btn.btn-danger.mr-3(type="button" disabled v-if="status") {{ status }}
     .row-n2(v-else)
+      button.btn.btn-success.mx-1.my-1(type="button" @click="btnShareMsg" v-if="s.msgs.length > 0") 分享測試訊息
       button.btn.btn-danger.mx-1.my-1(type="button" @click="btnPushMsg" v-if="s.msgs.length > 0") 推送訊息
-      button.btn.btn-primary.mx-1.my-1(type="button" @click="btnShareMsg" v-if="s.msgs.length > 0") 分享測試訊息
-      button.btn.btn-success.mx-1.my-1(type="button" @click="btnAddMsg") 新增推送訊息
+      button.btn.btn-info.mx-1.my-1(type="button" @click="btnAddMsg") 新增推送訊息
       a.btn.btn-outline-info.mx-1.my-1(target="_blank" href="https://line.me/R/ti/p/@736cebrk" data-toggle="tooltip" data-placement="top" title="by 和風信使 taichunmin") Flex 開發人員工具
       a.btn.btn-outline-info.mx-1.my-1(target="_blank" href="https://notify-bot.line.me/doc/en/") Notify API 文件
 
