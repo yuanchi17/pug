@@ -28,6 +28,7 @@ exports.build = async () => {
     basedir: path.resolve(__dirname, 'src'),
     baseUrl: getenv('BASEURL', 'https://yuanchi17.github.io/pug/'),
     GA_MEASUREMENT_ID: getenv('GA_MEASUREMENT_ID', 'UA-164526128-1'),
+    LIFFID_FULL: getenv('LIFFID_FULL'),
     NODE_ENV: getenv('NODE_ENV', 'production'),
   }
 

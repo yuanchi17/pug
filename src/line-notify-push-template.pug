@@ -58,13 +58,22 @@ block content
         span(aria-hidden) &times;
     button.btn.btn-danger.mr-3(type="button" disabled v-if="status") {{ status }}
     .d-flex(v-else)
+      button.btn.btn-danger.mr-3(type="button" @click="btnShareMsg" v-if="s.msgs.length > 0") 分享測試訊息
       button.btn.btn-danger.mr-3(type="button" @click="btnPushMsg" v-if="s.msgs.length > 0") 推送訊息
       button.btn.btn-success.mr-3(type="button" @click="btnAddMsg") 新增推送訊息
       a.btn.btn-outline-info.mr-3(target="_blank" href="https://line.me/R/ti/p/@736cebrk" data-toggle="tooltip" data-placement="top" title="by 和風信使 taichunmin") Flex 開發人員工具
       a.btn.btn-outline-info(target="_blank" href="https://notify-bot.line.me/doc/en/") Notify API 文件
 
 block script
+  script(src="https://static.line-scdn.net/liff/edge/2/sdk.js")
   script.
+    const loginPromise = (async () => {
+      await liff.init({ liffId: '#{LIFFID_FULL}' })
+      if (!liff.isLoggedIn()) {
+        liff.login({ redirectUri: location.href })
+        return await new Promise(resolve => {}) // 永遠不會結束的 Promise
+      }
+    })()
     const SESSION_KEY = 'pug-line-notify-push-template'
     window.vm = new Vue({
       el: '#app',
@@ -84,7 +93,8 @@ block script
           ],
         },
       },
-      mounted () {
+      async mounted () {
+        await loginPromise
         this.autoSaveLocalstorage()
       },
       methods: {
@@ -100,15 +110,11 @@ block script
           const errors = []
           this.pushStatus = { success: 0, count: 0, userCount: 0, finish: false }
           try {
-            const pushData = this.s
-
-            for (const msg of pushData.msgs) {
-              if (!msg.message) throw new Error('推送訊息內容不可為空')
-              if (!!msg.stickerPackageId ^ !!msg.stickerId) throw new Error('若要推送貼圖，StickerPackageId 及 StickerId 不可為空')
-            }
+            const inputData = this.s
+            this.checkMsgs(inputData)
 
             this.status = '讀取 CSV 中'
-            const rows = await this.getCsv(pushData.csv)
+            const rows = await this.getCsv(inputData.csv)
             if (rows.length < 1) throw new Error('無法從此 CSV 內讀取資料')
             if (!rows[0].access_token) throw new Error('CSV 格式錯誤：缺少參數「access_token」')
 
@@ -118,7 +124,7 @@ block script
             const result = await Swal.fire({
               icon: 'warning',
               title: '準備推送訊息',
-              text: `即將推送給 ${pushStatus.userCount} 位使用者 ${pushData.msgs.length} 筆訊息！`,
+              text: `即將推送給 ${pushStatus.userCount} 位使用者 ${inputData.msgs.length} 筆訊息！`,
               showCancelButton: true,
               showConfirmButton: false,
               showDenyButton: true,
@@ -131,8 +137,8 @@ block script
               try {
                 pushStatus.count++
 
-                for (const i in pushData.msgs) {
-                  const msg = pushData.msgs[i]
+                for (const i in inputData.msgs) {
+                  const msg = inputData.msgs[i]
                   this.status = `正在推送給第 ${pushStatus.count}／${pushStatus.userCount} 位使用者，第 ${parseInt(i) + 1} 筆訊息`
                   const message = _.template(msg.message)({ row })
                   await this.notify({
@@ -161,6 +167,56 @@ block script
           this.errors = errors.join('\n')
           this.pushStatus.finish = true
         },
+        async btnShareMsg () {
+          this.errors = ''
+          const errors = []
+          try {
+            await loginPromise
+            const inputData = this.s
+            if (!liff.isApiAvailable('shareTargetPicker')) throw new Error('不支援 shareTargetPicker，請嘗試更新應用程式版本。')
+            await Swal.fire({
+              icon: 'warning',
+              title: '提醒',
+              text: '此功能無法傳送貼圖'
+            })
+            this.checkMsgs(inputData)
+
+            this.status = '讀取 CSV 中'
+            const row = _.head(await this.getCsv(inputData.csv))
+            if (!row) throw new Error('無法從此 CSV 內讀取資料')
+
+            let shareMsgs = []
+            for (const i in inputData.msgs) {
+              const msg = inputData.msgs[i]
+              const message = _.template(msg.message)({ row })
+              this.status = '請選擇要分享的好友'
+              shareMsgs.push(
+                {
+                  type: 'text',
+                  text: `【分享測試訊息】${message}`,
+                },
+                ...((msg.img) ? [{
+                  type: 'image',
+                  originalContentUrl: msg.img,
+                  previewImageUrl: msg.img
+                }] : [])
+              )
+            }
+
+            const res = await liff.shareTargetPicker(shareMsgs)
+            if (_.get(res, 'status') !== 'success') throw new Error('傳送失敗')
+            await Swal.fire({
+              icon: 'success',
+              title: '測試訊息已分享'
+            })
+          } catch (err) {
+            console.log(err)
+            errors.push(_.get(err, 'message', err))
+            Swal.fire({ icon: 'error', title: '測試訊息分享失敗', text: _.get(err, 'message', err) })
+          }
+          this.status = ''
+          this.errors = errors.join('\n')
+        },
         async btnAddMsg () {
           this.s.msgs.push({
             img: '',
@@ -171,6 +227,12 @@ block script
         },
         async btnDelMsg (msgId) {
           this.s.msgs.splice(msgId, 1)
+        },
+        checkMsgs (inputData) {
+          for (const msg of inputData.msgs) {
+            if (!msg.message) throw new Error('推送訊息內容不可為空')
+            if (!!msg.stickerPackageId ^ !!msg.stickerId) throw new Error('若要推送貼圖，StickerPackageId 及 StickerId 不可為空')
+          }
         },
         async notify ({ accessToken, message, imageFullsize, imageThumbnail, stickerId, stickerPackageId }) {
           await axios.post('https://us-central1-yuanchi.cloudfunctions.net/cors-anywhere', Qs.stringify({
