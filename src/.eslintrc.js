@@ -12,6 +12,7 @@ module.exports = {
   globals: {
     _: 'readonly',
     axios: 'readonly',
+    liff: 'readonly',
     moment: 'readonly',
     Papa: 'readonly',
     Qs: 'readonly',

@@ -177,7 +177,7 @@ block script
             await Swal.fire({
               icon: 'warning',
               title: '提醒',
-              text: '此功能無法傳送貼圖'
+              text: '此功能無法傳送貼圖',
             })
             this.checkMsgs(inputData)
 
@@ -185,7 +185,7 @@ block script
             const row = _.head(await this.getCsv(inputData.csv))
             if (!row) throw new Error('無法從此 CSV 內讀取資料')
 
-            let shareMsgs = []
+            const shareMsgs = []
             for (const i in inputData.msgs) {
               const msg = inputData.msgs[i]
               const message = _.template(msg.message)({ row })
@@ -195,11 +195,13 @@ block script
                   type: 'text',
                   text: `【分享測試訊息】${message}`,
                 },
-                ...((msg.img) ? [{
-                  type: 'image',
-                  originalContentUrl: msg.img,
-                  previewImageUrl: msg.img
-                }] : [])
+                ...(msg.img
+                  ? [{
+                      type: 'image',
+                      originalContentUrl: msg.img,
+                      previewImageUrl: msg.img,
+                    }]
+                  : [])
               )
             }
 
@@ -207,7 +209,7 @@ block script
             if (_.get(res, 'status') !== 'success') throw new Error('傳送失敗')
             await Swal.fire({
               icon: 'success',
-              title: '測試訊息已分享'
+              title: '測試訊息已分享',
             })
           } catch (err) {
             console.log(err)
@@ -264,7 +266,7 @@ block script
             cancelButtonText: '關閉',
             confirmButtonText: '使用',
           })
-          if (result.value) window.open("https://line.me/R/ti/p/@736cebrk")
-        }
+          if (result.value) window.open('https://line.me/R/ti/p/@736cebrk')
+        },
       },
     })
