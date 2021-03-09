@@ -76,8 +76,8 @@ block script
   script(src="https://static.line-scdn.net/liff/edge/2/sdk.js")
   script.
     const loginPromise = (async () => {
-      //- await liff.init({ liffId: '1654061069-YXLwqzBw' })
-      await liff.init({ liffId: '1654061069-5ypKqEoK' })
+      await liff.init({ liffId: '1654061069-YXLwqzBw' }) // 正式
+      //- await liff.init({ liffId: '1654061069-5ypKqEoK' }) // 開發
       if (!liff.isLoggedIn()) {
         liff.login({ redirectUri: location.href })
         return await new Promise(resolve => {}) // 永遠不會結束的 Promise
