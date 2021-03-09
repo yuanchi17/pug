@@ -16,6 +16,8 @@ block style
         white-space: pre-wrap
       textarea
         min-height: 300px
+      .textarea-img
+        min-height: 100px
 
 block content
   include /navbar
@@ -31,23 +33,29 @@ block content
           button.btn.btn-danger.btn-sm.ml-auto(type="button" @click="btnDelMsg(msgId)") #[i.fa.fa-trash-o]
             span.pl-2 移除
         .row
-          .col-12.col-lg-4
+          .col
             .form-group
               label(:for="`inputStickerPackageId-${msgId}`") StickerPackageId
               button.btn.btn-link.py-0(type="button" @click="btnStickerTeach") #[i.fa.fa-question-circle-o]
               input.form-control(type="text" :id="`inputStickerPackageId-${msgId}`" v-model="msg.stickerPackageId" placeholder="（選填）")
-          .col-12.col-lg-4
+          .col
             .form-group
               label(:for="`inputStickerId-${msgId}`") StickerId
               button.btn.btn-link.py-0(type="button" @click="btnStickerTeach") #[i.fa.fa-question-circle-o]
               input.form-control(type="text" :id="`inputStickerId-${msgId}`" v-model="msg.stickerId" placeholder="（選填）")
-          .col-12.col-lg-4
+        .row
+          .col
             .form-group 
-              label(:for="`inputImg-${msgId}`") 圖片連結（HTTP／HTTPS）
-              input.form-control(type="text" :id="`inputImg-${msgId}`" v-model="msg.img" placeholder="（選填）")
+              label(:for="`inputImgT-${msgId}`") 圖片連結（HTTPS，可使用 #[a(target="_blank" href="https://lodash.com/docs/4.17.15#template") _.template] 變數語法）
+              textarea.textarea-img.form-control(type="text" :id="`inputImgT-${msgId}`" v-model="msg.imageThumbnail" placeholder="（選填）")
+        .row
+          .col
+            .form-group 
+              label(:for="`inputImgF-${msgId}`") 圖片連結（HTTPS）
+              input.form-control(type="text" :id="`inputImgF-${msgId}`" v-model="msg.imageFullsize" placeholder="（選填）")
         .form-group 
-          label(:for="`inputMsg-${msgId}`") 推送訊息內容（{{ msg.message.length }}／1000）
-          textarea.form-control(type="text" :id="`inputMsg-${msgId}`" v-model="msg.message" maxlength='1000' placeholder="（必填，可填寫空格）")
+          label(:for="`inputMsg-${msgId}`") 推送訊息內容
+          textarea.form-control(type="text" :id="`inputMsg-${msgId}`" v-model="msg.message" placeholder="（必填，可填寫空格）")
     .alert.alert-danger.alert-dismissible.fade.show.mt-3(role="alert" v-if="errors")
       p.m-0 {{ errors }}#[br]欲了解詳細錯誤資訊，請按 F12 查看 Console
       button.close(type="button" data-dismiss="alert" aria-label="Close" @click="errors = ''")
@@ -68,7 +76,8 @@ block script
   script(src="https://static.line-scdn.net/liff/edge/2/sdk.js")
   script.
     const loginPromise = (async () => {
-      await liff.init({ liffId: '1654061069-YXLwqzBw' })
+      //- await liff.init({ liffId: '1654061069-YXLwqzBw' })
+      await liff.init({ liffId: '1654061069-5ypKqEoK' })
       if (!liff.isLoggedIn()) {
         liff.login({ redirectUri: location.href })
         return await new Promise(resolve => {}) // 永遠不會結束的 Promise
@@ -85,8 +94,9 @@ block script
           csv: '',
           msgs: [
             {
-              img: 'https://i.imgur.com/o0tEo3q.png',
-              message: '嗨～這是傳給 ${row.name} 的預設推送訊息\n\n請自行更改訊息內容：）', // eslint-disable-line
+              imageFullsize: 'https://i.imgur.com/o0tEo3q.png',
+              imageThumbnail: 'https://i.imgur.com/o0tEo3q.png',
+              message: '<% function count(a) { return a+1 } %>\n\n嗨～這是傳給 ${_.get(row, "name", "無使用者")} 的第 ${count(0)} 則預設訊息\n\n請自行更改訊息內容：）', // eslint-disable-line
               stickerId: 106,
               stickerPackageId: 1,
             },
@@ -140,12 +150,13 @@ block script
                 for (const i in inputData.msgs) {
                   const msg = inputData.msgs[i]
                   this.status = `正在推送給第 ${pushStatus.count}／${pushStatus.userCount} 位使用者，第 ${parseInt(i) + 1} 筆訊息`
-                  const message = _.template(msg.message)({ row })
+                  const message = _.template(msg.message)({ Qs, _, row })
+                  const imageThumbnail = _.template(msg.imageThumbnail)({ Qs, _, row })
                   await this.notify({
                     accessToken: row.access_token,
                     message,
-                    imageFullsize: msg.img,
-                    imageThumbnail: msg.img,
+                    imageFullsize: msg.imageFullsize,
+                    imageThumbnail,
                     stickerId: msg.stickerId,
                     stickerPackageId: msg.stickerPackageId,
                   })
@@ -188,22 +199,24 @@ block script
             const shareMsgs = []
             for (const i in inputData.msgs) {
               const msg = inputData.msgs[i]
-              const message = _.template(msg.message)({ row })
+              const message = _.template(msg.message)({ Qs, _, row })
+              const imageThumbnail = _.template(msg.imageThumbnail)({ Qs, _, row })
               this.status = '請選擇要分享的好友'
               shareMsgs.push(
                 {
                   type: 'text',
                   text: `【分享測試訊息】${message}`,
                 },
-                ...(msg.img
+                ...(msg.imageFullsize
                   ? [{
                       type: 'image',
-                      originalContentUrl: msg.img,
-                      previewImageUrl: msg.img,
+                      originalContentUrl: msg.imageFullsize,
+                      previewImageUrl: imageThumbnail,
                     }]
                   : [])
               )
             }
+            console.log(shareMsgs)
 
             const res = await liff.shareTargetPicker(shareMsgs)
             if (_.get(res, 'status') !== 'success') throw new Error('傳送失敗')
@@ -221,7 +234,8 @@ block script
         },
         async btnAddMsg () {
           this.s.msgs.push({
-            img: '',
+            imageFullsize: '',
+            imageThumbnail: '',
             message: '',
             stickerId: '',
             stickerPackageId: '',
@@ -233,6 +247,7 @@ block script
         checkMsgs (inputData) {
           for (const msg of inputData.msgs) {
             if (!msg.message) throw new Error('推送訊息內容不可為空')
+            if (!!msg.imageFullsize ^ !!msg.imageThumbnail) throw new Error('若要推送圖片，圖片連結不可為空')
             if (!!msg.stickerPackageId ^ !!msg.stickerId) throw new Error('若要推送貼圖，StickerPackageId 及 StickerId 不可為空')
           }
         },
