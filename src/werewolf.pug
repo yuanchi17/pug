@@ -337,7 +337,7 @@ block script
             this.voice = 'safeNight'
             return
           }
-          _.each(this.willKill, rId => this.roles[rId - 1].life = false)
+          _.each(this.willKill, rId => { this.roles[rId - 1].life = false })
           this.game.status = this.isGameOver()
         },
         async takeOneSkill (rId) {
@@ -385,8 +385,7 @@ block script
         },
       },
     })
-
-//-
+//- 
   night, 天黑了，請閉眼
 
   wolfOpen, 狼人現身，請問你們要殺誰
@@ -413,54 +412,53 @@ block script
   請開始發言
   今晚被票的人是？（玩家選擇，點選確定）
   遊戲輸贏判定、下一輪開始
-
 //-     roles: [
-      {
-        id: 6,
-        name: '平民',
-        type: 'good',
-        text: '沒什麼用，好好玩吧 XD',
-        skill: {},
-        life: true
-      },
-      {
-        id: 2,
-        name: '預言家',
-        type: 'good',
-        text: '每晚可以查驗一名玩家是好人還是狼人',
-        skill: {},
-        life: true
-      },
-      {
-        id: 3,
-        name: '女巫',
-        type: 'good',
-        text: '有解藥及毒藥各一瓶，使用規則依在場玩家們為主',
-        skill: {},
-        life: true
-      },
-      {
-        id: 1,
-        name: '獵人',
-        type: 'good',
-        text: '除被毒殺之外，死後可決定是否要帶走一名玩家',
-        skill: {},
-        life: false
-      },
-      {
-        id: 5,
-        name: '狼人',
-        type: 'bad',
-        text: '每晚皆可與其他狼人討論要殺誰，如果你的夥伴都還活著的話',
-        skill: {},
-        life: true
-      },
-      {
-        id: 4,
-        name: '狼王',
-        type: 'bad',
-        text: '每晚皆可與其他狼人討論要殺誰，死後可決定是否要帶走一名玩家',
-        skill: {},
-        life: true
-      },
-    ]
+    {
+      id: 6,
+      name: '平民',
+      type: 'good',
+      text: '沒什麼用，好好玩吧 XD',
+      skill: {},
+      life: true
+    },
+    {
+      id: 2,
+      name: '預言家',
+      type: 'good',
+      text: '每晚可以查驗一名玩家是好人還是狼人',
+      skill: {},
+      life: true
+    },
+    {
+      id: 3,
+      name: '女巫',
+      type: 'good',
+      text: '有解藥及毒藥各一瓶，使用規則依在場玩家們為主',
+      skill: {},
+      life: true
+    },
+    {
+      id: 1,
+      name: '獵人',
+      type: 'good',
+      text: '除被毒殺之外，死後可決定是否要帶走一名玩家',
+      skill: {},
+      life: false
+    },
+    {
+      id: 5,
+      name: '狼人',
+      type: 'bad',
+      text: '每晚皆可與其他狼人討論要殺誰，如果你的夥伴都還活著的話',
+      skill: {},
+      life: true
+    },
+    {
+      id: 4,
+      name: '狼王',
+      type: 'bad',
+      text: '每晚皆可與其他狼人討論要殺誰，死後可決定是否要帶走一名玩家',
+      skill: {},
+      life: true
+    },
+  ]
