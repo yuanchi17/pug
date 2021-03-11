@@ -17,7 +17,7 @@ block style
       textarea
         min-height: 300px
       .textarea-img
-        min-height: 100px
+        min-height: 40px
 
 block content
   include /navbar
@@ -28,11 +28,14 @@ block content
       input.form-control(type="text" id="inputCsv" v-model="s.csv" placeholder="請填寫 CSV 網址")
     .card.mb-3(v-for="(msg, msgId) in s.msgs" :key="msgId")
       .card-body
-        .d-flex.mb-3
+        .d-flex
           h5.card-title.mt-auto.mb-0 第 {{ msgId+1 }} 筆訊息
-          button.btn.btn-danger.btn-sm.ml-auto(type="button" @click="btnDelMsg(msgId)") #[i.fa.fa-trash-o]
-            span.pl-2 移除
-        .row
+          .d-flex.ml-auto
+            button.btn.btn-info.btn-sm.mr-2(type="button" @click="btnClearMsg(msgId)") #[i.fa.fa-trash-o]
+              span.pl-2 清除
+            button.btn.btn-danger.btn-sm(type="button" @click="btnDelMsg(msgId)") #[i.fa.fa-times]
+        small.text-muted 皆可使用 #[a.text-danger(target="_blank" href="https://lodash.com/docs/4.17.15#template") _.template] 變數語法
+        .row.mt-2
           .col
             .form-group
               label(:for="`inputStickerPackageId-${msgId}`") StickerPackageId
@@ -46,13 +49,13 @@ block content
         .row
           .col
             .form-group 
-              label(:for="`inputImgT-${msgId}`") 圖片連結（HTTPS，可使用 #[a(target="_blank" href="https://lodash.com/docs/4.17.15#template") _.template] 變數語法）
-              textarea.textarea-img.form-control(type="text" :id="`inputImgT-${msgId}`" v-model="msg.imageThumbnail" placeholder="（選填）")
+              label(:for="`inputImgF-${msgId}`") 圖片連結（HTTPS）
+              textarea.textarea-img.form-control(type="text" :id="`inputImgF-${msgId}`" v-model="msg.imageFullsize" placeholder="（選填）")
         .row
           .col
             .form-group 
-              label(:for="`inputImgF-${msgId}`") 圖片連結（HTTPS）
-              input.form-control(type="text" :id="`inputImgF-${msgId}`" v-model="msg.imageFullsize" placeholder="（選填）")
+              label(:for="`inputImgT-${msgId}`") 縮圖連結（HTTPS）
+              textarea.textarea-img.form-control(type="text" :id="`inputImgT-${msgId}`" v-model="msg.imageThumbnail" placeholder="（選填）")
         .form-group 
           label(:for="`inputMsg-${msgId}`") 推送訊息內容
           textarea.form-control(type="text" :id="`inputMsg-${msgId}`" v-model="msg.message" placeholder="（必填，可填寫空格）")
@@ -94,11 +97,11 @@ block script
           csv: '',
           msgs: [
             {
-              imageFullsize: 'https://i.imgur.com/o0tEo3q.png',
-              imageThumbnail: 'https://i.imgur.com/o0tEo3q.png',
+              imageFullsize: '${_.get(row, "imageFullsize", "https://i.imgur.com/o0tEo3q.png")}',  // eslint-disable-line
+              imageThumbnail: '${_.get(row, "imageThumbnail", "https://i.imgur.com/o0tEo3q.png")}',  // eslint-disable-line
               message: '<% function count(a) { return a+1 } %>\n\n嗨～這是傳給 ${_.get(row, "name", "無使用者")} 的第 ${count(0)} 則預設訊息\n\n請自行更改訊息內容：）', // eslint-disable-line
-              stickerId: 106,
-              stickerPackageId: 1,
+              stickerId: '${_.get(row, "stickerId", 106)}', // eslint-disable-line
+              stickerPackageId: '${_.get(row, "stickerPackageId", 1)}', // eslint-disable-line
             },
           ],
         },
@@ -143,22 +146,21 @@ block script
             })
             if (!result.isDenied) throw new Error('已取消推送訊息')
 
+            this.status = '編譯訊息樣版中'
+            const templateMsgs = this.compileTemplate(inputData.msgs)
+
             for (const row of rows) {
               try {
                 pushStatus.count++
 
-                for (const i in inputData.msgs) {
-                  const msg = inputData.msgs[i]
-                  this.status = `正在推送給第 ${pushStatus.count}／${pushStatus.userCount} 位使用者，第 ${parseInt(i) + 1} 筆訊息`
-                  const message = _.template(msg.message)({ Qs, _, row })
-                  const imageThumbnail = _.template(msg.imageThumbnail)({ Qs, _, row })
+                this.status = '編譯訊息中'
+                const notifyMsgs = _.map(templateMsgs, msg => _.mapValues(msg, m => m({ Qs, _, row })))
+
+                for (const [i, notifyMsg] of _.toPairs(notifyMsgs)) {
+                  this.status = `正在推送給第 ${pushStatus.count}／${pushStatus.userCount} 位使用者，第 ${_.parseInt(i) + 1} 筆訊息`
                   await this.notify({
                     accessToken: row.access_token,
-                    message,
-                    imageFullsize: msg.imageFullsize,
-                    imageThumbnail,
-                    stickerId: msg.stickerId,
-                    stickerPackageId: msg.stickerPackageId,
+                    notifyMsg,
                   })
                 }
                 pushStatus.success++ // 推送成功
@@ -185,41 +187,23 @@ block script
             await loginPromise
             const inputData = this.s
             if (!liff.isApiAvailable('shareTargetPicker')) throw new Error('不支援 shareTargetPicker，請嘗試更新應用程式版本。')
-            await Swal.fire({
-              icon: 'warning',
-              title: '提醒',
-              text: '此功能無法傳送貼圖',
-            })
             this.checkMsgs(inputData)
 
             this.status = '讀取 CSV 中'
             const row = _.head(await this.getCsv(inputData.csv))
             if (!row) throw new Error('無法從此 CSV 內讀取資料')
 
-            const shareMsgs = []
-            for (const i in inputData.msgs) {
-              const msg = inputData.msgs[i]
-              const message = _.template(msg.message)({ Qs, _, row })
-              const imageThumbnail = _.template(msg.imageThumbnail)({ Qs, _, row })
-              this.status = '請選擇要分享的好友'
-              shareMsgs.push(
-                {
-                  type: 'text',
-                  text: `【分享測試訊息】${message}`,
-                },
-                ...(msg.imageFullsize
-                  ? [{
-                      type: 'image',
-                      originalContentUrl: msg.imageFullsize,
-                      previewImageUrl: imageThumbnail,
-                    }]
-                  : [])
-              )
-            }
-            console.log(shareMsgs)
+            this.status = '編譯訊息中'
+            const templateMsgs = this.compileTemplate(inputData.msgs) // 編譯訊息樣版
+            const msgs = _.map(templateMsgs, msg => _.mapValues(msg, m => m({ Qs, _, row }))) // 編譯訊息
+            const shareMsgs = this.getShareMsgs(msgs, row) // 轉換成 shareTargetPicker 的訊息格式
 
-            const res = await liff.shareTargetPicker(shareMsgs)
-            if (_.get(res, 'status') !== 'success') throw new Error('傳送失敗')
+            this.status = '選擇好友，準備分享測試訊息'
+            for (const chunkMsg of _.chunk(shareMsgs, 5)) {
+              const res = await liff.shareTargetPicker(chunkMsg)
+              if (_.get(res, 'status') !== 'success') throw new Error('傳送失敗')
+            }
+
             await Swal.fire({
               icon: 'success',
               title: '測試訊息已分享',
@@ -234,15 +218,42 @@ block script
         },
         async btnAddMsg () {
           this.s.msgs.push({
+            imageFullsize: '${row.imageFullsize}',  // eslint-disable-line
+            imageThumbnail: '${row.imageThumbnail}',  // eslint-disable-line
+            message: '${row.message}',  // eslint-disable-line
+            stickerId: '${row.stickerId}',  // eslint-disable-line
+            stickerPackageId: '${row.stickerPackageId}',  // eslint-disable-line
+          })
+        },
+        async btnDelMsg (msgId) {
+          const result = await Swal.fire({
+            icon: 'warning',
+            title: `即將刪除第 ${msgId + 1} 筆訊息`,
+            showCancelButton: true,
+            cancelButtonText: '取消',
+            confirmButtonText: '確定',
+          })
+          if (!result.value) return
+
+          this.s.msgs.splice(msgId, 1)
+        },
+        async btnClearMsg (msgId) {
+          const result = await Swal.fire({
+            icon: 'warning',
+            title: `即將清空第 ${msgId + 1} 筆訊息的欄位`,
+            showCancelButton: true,
+            cancelButtonText: '取消',
+            confirmButtonText: '確定',
+          })
+          if (!result.value) return
+
+          this.$set(this.s.msgs, msgId, {
             imageFullsize: '',
             imageThumbnail: '',
             message: '',
             stickerId: '',
             stickerPackageId: '',
           })
-        },
-        async btnDelMsg (msgId) {
-          this.s.msgs.splice(msgId, 1)
         },
         checkMsgs (inputData) {
           for (const msg of inputData.msgs) {
@@ -251,14 +262,35 @@ block script
             if (!!msg.stickerPackageId ^ !!msg.stickerId) throw new Error('若要推送貼圖，StickerPackageId 及 StickerId 不可為空')
           }
         },
-        async notify ({ accessToken, message, imageFullsize, imageThumbnail, stickerId, stickerPackageId }) {
-          await axios.post('https://us-central1-yuanchi.cloudfunctions.net/cors-anywhere', Qs.stringify({
-            message,
-            imageFullsize,
-            imageThumbnail,
-            stickerId,
-            stickerPackageId,
-          }), {
+        getShareMsgs (msgs, row) {
+          return _.flatten(_.map(msgs, msg => {
+            return [
+              {
+                type: 'text',
+                text: `【分享測試訊息】${msg.message}`,
+              },
+              ...(msg.stickerId
+                ? [{
+                    type: 'image',
+                    originalContentUrl: `https://stickershop.line-scdn.net/stickershop/v1/sticker/${msg.stickerId}/android/sticker.png`,
+                    previewImageUrl: `https://stickershop.line-scdn.net/stickershop/v1/sticker/${msg.stickerId}/android/sticker.png`,
+                  }]
+                : []),
+              ...(msg.imageFullsize
+                ? [{
+                    type: 'image',
+                    originalContentUrl: msg.imageFullsize,
+                    previewImageUrl: msg.imageThumbnail,
+                  }]
+                : []),
+            ]
+          }))
+        },
+        compileTemplate (msgs) {
+          return _.map(msgs, msg => _.mapValues(msg, _.template))
+        },
+        async notify ({ accessToken, notifyMsg }) {
+          await axios.post('https://us-central1-yuanchi.cloudfunctions.net/cors-anywhere', Qs.stringify(notifyMsg), {
             params: { u: 'https://notify-api.line.me/api/notify' },
             headers: {
               Authorization: `Bearer ${accessToken}`,
