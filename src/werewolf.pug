@@ -40,8 +40,8 @@ block style
 block content
   include /navbar
   #app.container.mt-3(v-cloak)
-    video(:src="`${voice}.mp3`" autoplay)
-    //- video(src="https://raw.githubusercontent.com/yuanchi17/pug/master/src/audio/night.mp3" autoplay)
+    //- video(:src="`${voice}.mp3`" autoplay)
+    video(:src="`https://raw.githubusercontent.com/yuanchi17/pug/master/src/audio/${voice}.mp3`" autoplay)
     #page-start.page.d-flex.flex-column(v-if="page === 'start'")
       h3.text-center.my-3 狼人殺
       label.form-check-label.mb-2 平民人數
