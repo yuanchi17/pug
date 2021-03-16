@@ -28,16 +28,21 @@ block content
 block script
   script(src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js")
   script(src="https://static.line-scdn.net/liff/edge/2/sdk.js")
-  script(async, src='https://www.googletagmanager.com/gtag/js?id=UA-39556213-5') 
+  script(async, src='https://www.googletagmanager.com/gtag/js?id=UA-39556213-5')
   script.
+    // gtag
     window.dataLayer = window.dataLayer || []
     function gtag () { window.dataLayer.push(arguments) }
     gtag('js', new Date())
-    gtag('config', 'UA-39556213-5',{
-      app_name: '',
-      send_page_view: false,
-      transport_type: 'beacon',
-    })
+    window.gtagSetLineId = lineId => {
+      gtag('config', 'UA-39556213-5',{
+        app_name: '',
+        send_page_view: false,
+        transport_type: 'beacon',
+        user_id: lineId,
+      })
+    }
+
     const loginPromise = (async () => {
       await liff.init({ liffId: '1653630254-RDAMb0PZ' })
       if (!liff.isLoggedIn()) {
@@ -45,21 +50,17 @@ block script
         return await new Promise(resolve => {}) // 永遠不會結束的 Promise
       }
       const profile = await liff.getProfile()
+      if (!profile.userId) throw new Error('無法取得 userId')
+      if (window.gtagSetLineId) window.gtagSetLineId(profile.userId)
       return profile
     })()
     window.sleep = t => new Promise(resolve => { setTimeout(resolve, t) })
 
-    const redirect = (async () => {
-      const profile = await loginPromise
-      // gtag
+    const redirect = async () => {
+      await loginPromise
       gtag('event', 'screen_view', { screen_name: '引導到YB官帳' })
-      gtag('event', '引導到YB官帳', {
-        event_category: '引導到YB官帳',
-        event_label: _.get(profile, 'displayName', '無暱稱'),
-      })
-      await window.sleep(2000)
       liff.openWindow({ url: 'https://line.me/R/ti/p/@youbike' })
       await window.sleep(1000)
       liff.closeWindow()
-    })()
+    }
     redirect()
