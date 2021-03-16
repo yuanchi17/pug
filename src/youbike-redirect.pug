@@ -39,7 +39,7 @@ block script
       transport_type: 'beacon',
     })
     const loginPromise = (async () => {
-      await liff.init({ liffId: '1655757631-QKOK03Dx' }) // TODO: 小幫手的 LIFF_ID
+      await liff.init({ liffId: '1653630254-RDAMb0PZ' })
       if (!liff.isLoggedIn()) {
         liff.login({ redirectUri: location.href })
         return await new Promise(resolve => {}) // 永遠不會結束的 Promise
