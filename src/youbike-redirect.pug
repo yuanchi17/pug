@@ -26,19 +26,20 @@ block content
     h3.text-center.my-3 3 秒後自動跳轉
 
 block script
-  script(src="https://cdn.jsdelivr.net/npm/js-base64@2/base64.min.js")
-  script(src="https://cdn.jsdelivr.net/npm/vconsole@3/dist/vconsole.min.js")
+  //- script(src="https://cdn.jsdelivr.net/npm/vconsole@3/dist/vconsole.min.js")
   script(src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js")
-  script(src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.min.js")
   script(src="https://static.line-scdn.net/liff/edge/2/sdk.js")
-  //- script(async, src='https://www.googletagmanager.com/gtag/js?id=UA-39556213-5') 
-  //- script.
-  //-   window.dataLayer = window.dataLayer || []
-  //-   function gtag () { window.dataLayer.push(arguments) }
-  //-   gtag('js', new Date())
-  //-   gtag('config', 'UA-39556213-5')
+  script(async, src='https://www.googletagmanager.com/gtag/js?id=UA-39556213-5') 
   script.
-    new VConsole() // eslint-disable-line
+    //- new VConsole() // eslint-disable-line
+    window.dataLayer = window.dataLayer || []
+    function gtag () { window.dataLayer.push(arguments) }
+    gtag('js', new Date())
+    gtag('config', 'UA-39556213-5',{
+      app_name: '',
+      send_page_view: false,
+      transport_type: 'beacon',
+    })
     const loginPromise = (async () => {
       await liff.init({ liffId: '1655757631-QKOK03Dx' }) // TODO: 小幫手的 LIFF_ID
       if (!liff.isLoggedIn()) {
@@ -55,11 +56,11 @@ block script
       async mounted () {
         const profile = await loginPromise
         // gtag
-        //- gtag('event', 'screen_view', { screen_name: '引導到YB官帳' })
-        //- gtag('event', '引導到YB官帳', {
-        //-   event_category: '引導到YB官帳',
-        //-   event_label: _.get(profile, 'displayName', ''),
-        //- })
+        gtag('event', 'screen_view', { screen_name: '引導到YB官帳' })
+        gtag('event', '引導到YB官帳', {
+          event_category: '引導到YB官帳',
+          event_label: _.get(profile, 'displayName', '無暱稱'),
+        })
         await window.sleep(2000)
         liff.openWindow({ url: 'https://line.me/R/ti/p/@youbike' })
         await window.sleep(1000)
