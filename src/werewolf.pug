@@ -19,7 +19,7 @@ block style
         max-width: 760px
 
       .page
-        min-height: 99vh
+        min-height: 65vh
       .card-body
         background: #323232
       #page-check
@@ -63,21 +63,21 @@ block content
         .form-check.form-check-inline
           input.form-check-input(type="checkbox" id="selectWokfKing" v-model="init.wolfKing")
           label.form-check-label(for="selectWokfKing") 狼王
-      button.btn.btn-secondary.my-3(type="button", @click="pageCheckRole") 開始遊戲
+      button.btn.btn-secondary.my-3(type="button", @click="btnCheckCount") 開始遊戲
     #page-check.page.d-flex.flex-column(v-else-if="page === 'checkRole'")
       h3.text-center.my-3 狼人殺
       .card(v-if="checkRole")
         .card-body.d-flex.flex-column
           h4.card-title.text-center.my-auto {{ role.id }} 號，{{ role.name }}
           p.text-center {{ role.text }}
-          p.text-center(v-if="number > roles.length") 點擊確認後，將手機放置桌面中間
+          p.text-center(v-if="playerNo > roles.length") 點擊確認後，將手機放置桌面中間
           p.text-center(v-else) 點擊確認後傳給下一位
-          button.btn.btn-secondary.btn-block.mt-auto(type="button", @click="btnCheckRole") 確認
+          button.btn.btn-secondary.btn-block.mt-auto(type="button", @click="btnNextRole()") 確認
       .card(v-else)
         .card-body.d-flex.flex-column
-          h4.card-title.text-center.my-auto(v-if="number === roles.length") 所有玩家請將手放置手機附近，遊戲即將開始
+          h4.card-title.text-center.my-auto(v-if="playerNo === roles.length") 所有玩家請將手放置手機附近，遊戲即將開始
           h4.card-title.text-center.my-auto(v-else) 我是誰？
-          button.btn.btn-secondary.btn-block.mt-auto(type="button", @click="btnCheckRole") {{ number > roles.length ? '進入黑夜' : '查看角色' }}
+          button.btn.btn-secondary.btn-block.mt-auto(type="button", @click="btnNextRole(true)") {{ playerNo > roles.length ? '進入黑夜' : '查看角色' }}
     #page-night.page.d-flex.flex-column.justify-content-center(v-else-if="page === 'night'")
       .all-close(v-if="process.status === 'close'")
         h3.text-center {{ getRoleCh }}請閉眼
@@ -170,73 +170,88 @@ block script
     window.vm = new Vue({
       el: '#app',
       data: {
-        checkRole: false,
-        init: {
-          people: 1,
-          wolf: 1,
-          prophet: false,
-          witch: false,
-          hunter: false,
+        page: 'start',
+        init: { // 人數確認會依照順序
+          people: 3,
+          wolf: 3,
           wolfKing: false,
+          prophet: true,
+          witch: true,
+          hunter: true,
         },
         voice: '', // 要說的音檔名稱
         process: { // 更新哪個角色要閉眼睜眼
           roleEn: '',
           status: 'close',
         },
-        number: 0,
-        page: 'start',
+        playerNo: 0,
+        role: {},
         roles: [],
         willKill: [],
+        checkRole: false,
         game: { status: false, winner: '', loser: '' },
       },
       mounted () {
       },
       computed: {
         hasHunterOrWolfking () { return !!(_.find(this.roles, { name: '獵人' }) || _.find(this.roles, { name: '狼王' })) },
-        getRoleCh () { return _.get(ROLE_LIST, this.process.roleEn, '') }
+        getRoleCh () { return _.get(ROLE_LIST, this.process.roleEn, '') },
       },
       methods: {
         async init () {
           this.roles = []
           this.page = 'start'
         },
-        async pageCheckRole () {
+        async btnCheckCount () {
+          // 轉換格式
+          this.roles = _.compact(_.flatten(_.map(this.init, (count, role) => {
+            if (!count) return
+            return _.times(count, () => ({ id: null, life: true, ...ROLES[role] }))
+          })))
+
+          // 玩家人數 = 0
+          if (!this.roles.length) {
+            await Swal.fire({ icon: 'warning', title: '請輸入初始角色' })
+            return
+          }
+          // 玩家人數確認
+          const players = _.compact(_.map(this.init, (count, role) => {
+            if (!count) return
+            return _.isBoolean(count) ? ROLES[role].name : `${ROLES[role].name}*${count}`
+          }))
           const result = await Swal.fire({
             title: '人數確認',
-            html: `<p>平民 x${this.init.people}、狼人 x${this.init.wolf}<br>${this.init.prophet ? '預言家<br>' : ''}${this.init.witch ? '女巫<br>' : ''}${this.init.hunter ? '獵人<br>' : ''}${this.init.wolfKing ? '狼王' : ''}</p>`,
+            text: players.join('、'),
             showCancelButton: true,
             cancelButtonText: '調整人數',
             confirmButtonText: '開始遊戲',
           })
           if (!result.isConfirmed) return
-
-          this.roles = _.compact(_.flatten(_.map(this.init, (role, key) => {
-            if (!role) return
-            return _.times(role, () => ({ id: 0, life: true, ...ROLES[key] }))
-          })))
-
           this.page = 'checkRole'
         },
-        async btnCheckRole () {
-          this.checkRole = !this.checkRole // "確認角色頁面"轉換
-
-          if (!this.roles.length) return // 玩家人數 = 0
-          if (this.number === this.roles.length && this.checkRole) {
+        async btnNextRole (btnCheck = false) {
+          this.checkRole = btnCheck
+          if (!btnCheck) return // 非"確認角色頁面"
+          if (this.playerNo === this.roles.length && btnCheck) {
             this.pageNight(true) // 全部玩家已確認身分
             return
           }
-          if (!this.checkRole) return // 非"確認角色頁面"
 
-          this.role = _.sample(_.get(_.groupBy(this.roles, 'id'), 0))
-          this.role.id = this.number + 1
-          console.log('確認角色', this.role.id , this.role.name)
-          this.number++
+          const role = _.chain(this.roles)
+            .groupBy('id')
+            .get(null)
+            .sample()
+            .set('id', this.playerNo + 1)
+            .value()
+    
+          console.log(`確認角色：${role.id} 號，${role.name}`)
+          this.$set(this, 'role', role)
+          this.playerNo++
         },
         async pageNight (first = false) {
           if (first) {
-          console.log('全部玩家已確認身分，遊戲開始')
-          this.roles = _.orderBy(this.roles, 'id')
+            console.log('全部玩家已確認身分，遊戲開始')
+            this.roles = _.orderBy(this.roles, 'id')
           }
 
           this.willKill = []
@@ -274,21 +289,32 @@ block script
           this.pageWitch()
         },
         async pageWitch () {
-          // TODO: 確認女巫被殺後的流程
-          let result
           // 遊戲初始沒有女巫
           if (!this.init.witch) {
             this.pageBright()
             return
           }
 
-          const skill = _.get(_.find(this.roles, { name: '女巫' }), 'skill')
-          // 是否要使用解藥
+          const witch = _.find(this.roles, { name: '女巫' })
+          // 女巫睜眼，是否要使用解藥
           await this.updateNight('witch', 'open', 'witchOpen')
-          if (!skill.help) await Swal.fire({ title: '你已使用過解藥', confirmButtonText: '確定' })
+          if (!witch.life) {
+            await Swal.fire({ title: '你已被殺死，但流程還是要跑', confirmButtonText: '確定' })
+            await this.awaitChangeVoice('witchKill')
+            await Swal.fire({ title: '等等！別急著走，還有一次XD', confirmButtonText: '確定' })
+            await this.updateNight('witch', 'close', 'witchClose')
+            this.pageBright()
+            return
+          }
+
+          await this.askWitchUseHelp(witch)
+          await this.ashWitchUseKill(witch) // 是否要使用毒藥
+        },
+        async askWitchUseHelp (witch) {
+          if (!_.get(witch, 'skill.help')) await Swal.fire({ title: '你已使用過解藥', confirmButtonText: '確定' })
           else {
             // 是否要使用解藥
-            result = await Swal.fire({
+            const result = await Swal.fire({
               title: `${this.willKill[0]} 號被殺了，你要救他嗎？`,
               showCancelButton: true,
               cancelButtonText: '不要',
@@ -296,19 +322,19 @@ block script
             })
             if (result.isConfirmed) {
               this.willKill = []
-              skill.help = 0
+              _.set(_.find(this.roles, { name: '女巫' }), 'skill.help', 0)
             }
           }
-
-          // 是否要使用毒藥
+        },
+        async ashWitchUseKill (witch) {
           await this.awaitChangeVoice('witchKill')
-          if (!skill.kill) {
+          if (!_.get(witch, 'skill.kill')) {
             await Swal.fire({ title: '你已使用過毒藥', confirmButtonText: '確定' })
             await this.updateNight('witch', 'close', 'witchClose')
             this.pageBright()
             return
           }
-          result = await Swal.fire({
+          const result = await Swal.fire({
             title: '要使用毒藥嗎？',
             showCancelButton: true,
             cancelButtonText: '不要',
@@ -317,7 +343,6 @@ block script
           if (!result.isConfirmed) {
             await this.updateNight('witch', 'close', 'witchClose')
             this.pageBright()
-            return
           }
         },
         async btnWitchSkill (rId) {
@@ -325,7 +350,7 @@ block script
           if (!result.isConfirmed) return
 
           this.willKill.push(rId)
-          _.set(_.find(this.roles, {name:'女巫'}), 'skill.kill', 0)
+          _.set(_.find(this.roles, { name: '女巫' }), 'skill.kill', 0)
 
           await this.updateNight('witch', 'close', 'witchClose')
           this.pageBright()
@@ -398,79 +423,3 @@ block script
         },
       },
     })
-//- 
-  night, 天黑了，請閉眼
-
-  wolfOpen, 狼人現身，請問你們要殺誰
-  wolfUndefined, 狼人給我出來！
-  wolfClose, 狼人請閉眼
-
-  prophetOpen, 預言家請睜眼，請問你要查誰？
-  不用音檔, 他是（好 or 壞）
-  prophetClose, 預言家請閉眼
-
-  witchOpen, 女巫請睜眼，請問你要使用解藥嗎？
-  witchKill, 你要使用毒藥嗎？
-  （一晚只能用一個，自由心證）
-  witchClose, 女巫請閉眼
-
-  不用音檔, 獵人請睜眼（給使用說明，如果你被殺了，可以在天亮時選擇要不要使用技能帶走人）
-
-  allOpen, 天亮了，請睜眼
-
-  不用音檔(alert), 昨晚被殺的是（翻牌）
-  不用音檔(alert), 昨晚是個平安夜
-
-  請開始發言
-  今晚被票的人是？（玩家選擇，點選確定）
-  遊戲輸贏判定、下一輪開始
-//-     roles: [
-    {
-      id: 6,
-      name: '平民',
-      type: 'good',
-      text: '沒什麼用，好好玩吧 XD',
-      skill: {},
-      life: true
-    },
-    {
-      id: 2,
-      name: '預言家',
-      type: 'good',
-      text: '每晚可以查驗一名玩家是好人還是狼人',
-      skill: {},
-      life: true
-    },
-    {
-      id: 3,
-      name: '女巫',
-      type: 'good',
-      text: '有解藥及毒藥各一瓶，使用規則依在場玩家們為主',
-      skill: {},
-      life: true
-    },
-    {
-      id: 1,
-      name: '獵人',
-      type: 'good',
-      text: '除被毒殺之外，死後可決定是否要帶走一名玩家',
-      skill: {},
-      life: false
-    },
-    {
-      id: 5,
-      name: '狼人',
-      type: 'bad',
-      text: '每晚皆可與其他狼人討論要殺誰，如果你的夥伴都還活著的話',
-      skill: {},
-      life: true
-    },
-    {
-      id: 4,
-      name: '狼王',
-      type: 'bad',
-      text: '每晚皆可與其他狼人討論要殺誰，死後可決定是否要帶走一名玩家',
-      skill: {},
-      life: true
-    },
-  ]

@@ -35,7 +35,7 @@ block script
     function gtag () { window.dataLayer.push(arguments) }
     gtag('js', new Date())
     window.gtagSetLineId = lineId => {
-      gtag('config', 'UA-39556213-5',{
+      gtag('config', 'UA-39556213-5', {
         app_name: '',
         send_page_view: false,
         transport_type: 'beacon',
@@ -58,7 +58,7 @@ block script
 
     const redirect = async () => {
       await loginPromise
-      gtag('event', 'screen_view', { screen_name: '引導到YB官帳' })
+      gtag('event', 'screen_view', { screen_name: '跳轉YB官方帳號' })
       liff.openWindow({ url: 'https://line.me/R/ti/p/@youbike' })
       await window.sleep(1000)
       liff.closeWindow()
