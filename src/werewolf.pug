@@ -215,10 +215,10 @@ block script
             return
           }
           // 玩家人數確認
-          const players = _.compact(_.map(this.init, (count, role) => {
-            if (!count) return
-            return _.isBoolean(count) ? ROLES[role].name : `${ROLES[role].name}*${count}`
-          }))
+          const players = _.chain(this.roles)
+            .groupBy('name')
+            .map((group, role) => group.length === 1 ? role : `${role}*${group.length}`)
+            .value()
           const result = await Swal.fire({
             title: '人數確認',
             text: players.join('、'),
@@ -279,10 +279,10 @@ block script
           const result = await this.checkSelectAlert(`確認要查 ${rId} 號？`)
           if (!result.isConfirmed) return
 
-          const role = this.roles[rId - 1]
+          const isWolf = this.roles[rId - 1].type === 'wolf'
           await Swal.fire({
-            icon: `${role.type === 'wolf' ? 'error' : 'success'}`,
-            title: `他是${role.type === 'wolf' ? '壞' : '好'}人`,
+            icon: `${isWolf ? 'error' : 'success'}`,
+            title: `他是${isWolf ? '壞' : '好'}人`,
             confirmButtonText: '確定',
           })
           await this.updateNight('prophet', 'close', 'prophetClose')
