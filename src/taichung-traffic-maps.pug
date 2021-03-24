@@ -1,0 +1,332 @@
+extends layout
+
+block beforehtml
+  - const title = '台中交通分佈地圖'
+
+block style
+  link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css")
+  link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/font-awesome@4/css/font-awesome.min.css")
+  link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1/dist/MarkerCluster.css")
+  link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1/dist/MarkerCluster.Default.css")
+  link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/leaflet@1/dist/leaflet.min.css")
+  style
+    :sass
+      [v-cloak]
+        display: none
+      html, body, #app, #map
+        height: 100%
+        width: 100vw
+      #app
+        position: relative
+      #visible
+        background-color: white
+        padding: .3rem .5rem
+        position: absolute
+        right: 10px
+        top: 10px
+      .switch-visible3 
+        background: rgba(0, 190, 255, .4)
+        width: 100%
+      .switch-visible4 
+        background: rgba(215, 65, 240, .4)
+        width: 100%
+      .unselectable
+        -webkit-user-select: none
+        -moz-user-select: none
+        -ms-user-select: none
+        user-select: none
+      .leaflet-popup-content
+        font-size: 14px
+        h6
+          font-size: 18px
+        .table-station
+          th
+            white-space: nowrap
+          td
+            text-align: right
+      .location-circle-tooltip
+        &.leaflet-tooltip
+          background: transparent
+          border: none
+          box-shadow: none
+        &.leaflet-tooltip-top:before
+          border: none
+      .hide-circle
+        .traffic3-circle, .traffic4-circle
+          visibility: hidden
+      .hide-traffic3-circle
+        .traffic3-circle
+          visibility: hidden
+      .hide-traffic4-circle
+        .traffic4-circle
+          visibility: hidden
+      .marker-cluster-yb1
+        background-color: rgba(255, 158, 21, 0.5)
+        >div
+          background-color: rgba(255, 158, 21, 0.5)
+      .marker-cluster-yb2
+        background-color: rgba(162, 41, 41, 0.4)
+        >div
+          background-color: rgba(162, 41, 41, 0.4)
+          color: #ffffff
+      .marker-cluster-traffic3
+        background-color: rgba(0, 190, 255, 0.5)
+        >div
+          background-color: rgba(0, 190, 255, 0.5)
+      .marker-cluster-traffic4
+        background-color: rgba(215, 65, 240, 0.5)
+        >div
+          background-color: rgba(215, 65, 240, 0.5)
+block content
+  #app(v-cloak, :class="{'hide-circle': mapZoom < 12, 'hide-traffic3-circle': !visible[3], 'hide-traffic4-circle': !visible[4]}")
+    #visible.leaflet-bar.leaflet-control.unselectable.text-monospace(v-if="_.keys(visible).length === 4")
+      .custom-control.custom-switch(v-for="(v, k) in visible", :key="k")
+        input.custom-control-input(type="checkbox", v-model="visible[k]", :id="`switch-visible${k}`")
+        label.px-1.my-1.custom-control-label.switch-visible3(:for="`switch-visible${k}`" v-if="k==='3'") 台中捷運 MRT
+        label.px-1.my-1.custom-control-label.switch-visible4(:for="`switch-visible${k}`" v-else-if="k==='4'") 台鐵 TRA
+        label.px-1.my-1.custom-control-label(:for="`switch-visible${k}`" v-else) YouBike {{ k }}.0
+    #map
+
+block script
+  script(src="https://cdn.jsdelivr.net/npm/@hapi/joi@17/dist/joi-browser.min.js")
+  script(src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js")
+  script(src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js")
+  script(src="https://cdn.jsdelivr.net/npm/lodash@4/lodash.min.js")
+  script(src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js")
+  script(src="https://cdn.jsdelivr.net/npm/popper.js@1/dist/umd/popper.min.js")
+  script(src="https://cdn.jsdelivr.net/npm/qs@6/dist/qs.min.js")
+  script(src="https://cdn.jsdelivr.net/npm/sweetalert2@10")
+  script(src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.min.js")
+  script(src="https://cdn.jsdelivr.net/npm/leaflet@1/dist/leaflet.min.js")
+  script(src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1/dist/leaflet.markercluster.min.js")
+  script(src="https://cdn.jsdelivr.net/npm/moment@2/moment.min.js")
+  script(src="https://cdn.jsdelivr.net/npm/moment@2/locale/zh-tw.min.js")
+  //- bootstrap require jquery and pupper
+  script(src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js")
+  script.
+    const verifyStationRealtime = (() => {
+      const schema = joi.object({
+        id: joi.number().integer().min(1).empty('').required(),
+        name: joi.string().empty('').required(),
+        type: joi.number().integer().valid(1, 2).empty('').required(),
+        space: joi.number().integer().min(0).default(0).empty(''),
+        full: joi.number().integer().min(0).default(0).empty(''),
+        empty: joi.number().integer().min(0).default(0).empty(''),
+        city: joi.string().empty('').optional(),
+        area: joi.string().empty('').optional(),
+        lat: joi.number().min(21).max(28).empty('0').required(),
+        lng: joi.number().min(117).max(123).empty('0').required(),
+        place_id: joi.string().empty('').optional(),
+        address: joi.string().empty('').optional(),
+        is_open: joi.number().integer().min(0).default(0).empty(''),
+        updated_at: joi.date().timestamp('unix').required(),
+      })
+      return value => schema.validateAsync(value, { stripUnknown: true })
+    })()
+
+    const GOOGLE_MAPS_BASEURL = 'https://www.google.com/maps/dir/?'
+    const IMAGE_BASEURL = 'https://gcs-youbike2-linebot.taichunmin.idv.tw/theme1/maps/'
+    const stationToIcon = (() => {
+      const LeafIcon = L.Icon.extend({
+        options: {
+          iconAnchor: [13, 37],
+          iconSize: [26, 40],
+          popupAnchor: [0, -39],
+        },
+      })
+      const ICONS = {}
+      const getIcon = (type, status) => {
+        const key = `${status}-${type}`
+        const isTraffic = status === 'traffic'
+        let iconUrl = `${IMAGE_BASEURL}station-${key}.png?t=20210324`
+        if (isTraffic) iconUrl = `https://i.imgur.com/${type === '3' ? '2jcNp9k' : 'hkhwdx9'}.png`
+        if (!ICONS[key]) ICONS[key] = new LeafIcon({ iconUrl })
+        return ICONS[key]
+      }
+      return s => {
+        if (s.type === '3' || s.type === '4') return getIcon(s.type, 'traffic')
+        if (!s.is_open) return getIcon(s.type, 'closed')
+        if (s.space === 0) return getIcon(s.type, 'full')
+        if (s.full === 0) return getIcon(s.type, 'empty')
+        return getIcon(s.type, 'normal')
+      }
+    })()
+    const httpBuildQuery = obj => Qs.stringify(obj, { arrayFormat: 'brackets' })
+    const stationToPopup = (() => {
+      const stationToGoogleMap = station => {
+        const query = {
+          api: 1,
+          destination: `${station.lat},${station.lng}`,
+          travelmode: 'walking',
+        }
+        if (_.isString(station.place_id) && station.place_id) query.destination_place_id = station.place_id
+        return GOOGLE_MAPS_BASEURL + httpBuildQuery(query)
+      }
+      const getHtml = s => {
+        if (s.type === '3' || s.type === '4') return `<h6 class="mb-2"><strong>${s.name}</strong></h6>`
+        return `<h6 class="mb-2"><strong>${s.name}${s.is_open ? '' : ' (暫停營運)'}</strong></h6>
+    <table class="table table-sm table-borderless table-station text-monospace">
+      <tr><th><i class="fa fa-star text-warning"></i> 可借車輛</th><td> ${s.full} 輛</td></tr>
+      <tr><th><i class="fa fa-star text-warning"></i> 可停空位</th><td> ${s.empty} 輛</td></tr>
+      <tr><th><i class="fa fa-star text-warning"></i> 更新時間</th><td class="text-nowrap">${moment(s.updated_at).format('MM/DD HH:mm')}</td></tr>
+    </table>`
+      }
+
+      return s => `${getHtml(s)}
+    <a class="btn btn-dark btn-sm btn-block text-white" href="${stationToGoogleMap(s)}" role="button" target="_blank">
+      Google 導航
+    </a>`
+    })()
+
+    let map
+    window.parseJsonOrDefault = (str, defaultValue) => {
+      try {
+        if (!_.isString(str) && !_.isBuffer(str)) return defaultValue
+        return JSON.parse(str)
+      } catch (err) {
+        return defaultValue
+      }
+    }
+    window.sleep = t => new Promise(resolve => { setTimeout(resolve, t) })
+    window.vm = new Vue({
+      el: '#app',
+      data: {
+        loading: true,
+        mapZoom: 15,
+        visible: {},
+        src: {
+          youbike: 'https://gcs-youbike2-linebot.taichunmin.idv.tw/latest-data/youbike-station.csv',
+          traffic: 'https://gist.githubusercontent.com/yuanchi17/e4642d8d84ff9cd7c76ab89ef768d22a/raw/maps-traffic.csv',
+        },
+      },
+      async mounted () {
+        moment.locale('zh-tw')
+        this.initMap()
+        this.initStations()
+      },
+      methods: {
+        async initMap () {
+          const coord = {
+            lat: this.param('lat', 24.152727), // 預設為捷運水安宮站
+            lng: this.param('lng', 120.646965),
+            zoom: this.param('zoom', 15),
+          }
+          const tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attribution">CARTO</a>',
+          })
+          map = L.map('map', {
+            center: [coord.lat, coord.lng],
+            zoom: coord.zoom,
+            layers: [tiles],
+            tap: false, //- https://github.com/Leaflet/Leaflet/issues/3184
+          })
+          L.marker([coord.lat, coord.lng], {
+            icon: L.icon({
+              iconAnchor: [10, 36],
+              iconSize: [20, 38],
+              iconUrl: `${IMAGE_BASEURL}marker.png?t=20210324`,
+              popupAnchor: [0, -38],
+            }),
+          }).addTo(map)
+          map.on('zoomend', () => { this.mapZoom = map.getZoom() })
+        },
+        async getYouBikeStations () {
+          const stations = await this.getCsv(this.src.youbike)
+          const nowts = +new Date()
+          return _.filter(await Promise.all(_.map(stations, async s => {
+            try {
+              s = await verifyStationRealtime(s)
+              s.is_open = (s.is_open === 1 && (s.empty + s.full) > 0 && (nowts - s.updated_at) < 864e5) ? 1 : 0
+              return s
+            } catch (err) {
+              return null
+            }
+          })))
+        },
+        async initStations () {
+          this.loading = true
+          this.showLoading('載入中，請稍後…')
+          const saved = window.parseJsonOrDefault(localStorage.getItem('traffic-maps-visible'), {})
+          // 根據 type 進行分組
+          const types = window.types = _.groupBy(_.flatten(await Promise.all([
+            this.getYouBikeStations(),
+            this.getCsv(this.src.traffic),
+          ])), 'type')
+
+          _.each(types, async (stations, type) => {
+            const classType = type => {
+              if (type === '1' || type === '2') return `yb${type}`
+              return `traffic${type}`
+            }
+            const className = `marker-cluster marker-cluster-${classType(type)}`
+            const cluster = L.markerClusterGroup({
+              chunkedLoading: true,
+              disableClusteringAtZoom: 15,
+              spiderfyOnMaxZoom: false,
+              iconCreateFunction: cluster => {
+                return new L.DivIcon({
+                  className,
+                  html: `<div><span>${cluster.getChildCount()}</span></div>`,
+                  iconSize: new L.Point(40, 40),
+                })
+              },
+            }).addLayers(_.map(stations, s => {
+              if (s.type === '3' || s.type === '4') {
+                this.addCircle({
+                  className: `traffic${s.type}-circle`,
+                  fillColor: s.type === '3' ? '#00beff' : '#D741F0',
+                  fillOpacity: 0.2,
+                  lat: s.lat,
+                  lng: s.lng,
+                  radius: 1000, // 1000m
+                })
+              }
+              const marker = L.marker([s.lat, s.lng], { icon: stationToIcon(s) })
+                .bindPopup(stationToPopup(s), { minWidth: 200 })
+              return marker
+            }))
+            this.$set(this.visible, type, false)
+            this.$watch(`visible.${type}`, (newVal, oldVal) => {
+              const hasLayer = map.hasLayer(cluster)
+              if (hasLayer ^ newVal) {
+                map[newVal ? 'addLayer' : 'removeLayer'](cluster)
+                localStorage.setItem('traffic-maps-visible', JSON.stringify(this.visible))
+              }
+            })
+            if (_.get(saved, type, true)) this.$set(this.visible, type, true)
+          })
+          this.loading = false
+          Swal.fire({ icon: 'success', title: '載入完成' })
+        },
+        async addCircle ({ lat, lng, className, fillColor, fillOpacity, radius }) {
+          L.circle([lat, lng], {
+            className,
+            stroke: false,
+            fillColor,
+            fillOpacity,
+            radius,
+          }).addTo(map)
+        },
+        async getCsv (url) {
+          const csv = _.trim(_.get(await axios.get(url, {
+            params: { cachebust: _.floor(new Date() / 3e4) },
+          }), 'data'))
+          return _.get(Papa.parse(csv, {
+            encoding: 'utf8',
+            header: true,
+          }), 'data', [])
+        },
+        param (key, defaultValue) {
+          const val = new URL(location).searchParams.get(key)
+          return _.isNil(val) ? defaultValue : val
+        },
+        showLoading (title) {
+          Swal.fire({
+            title,
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            willOpen: () => { Swal.showLoading() },
+          })
+        },
+      },
+    })

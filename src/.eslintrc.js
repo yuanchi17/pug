@@ -12,6 +12,8 @@ module.exports = {
   globals: {
     _: 'readonly',
     axios: 'readonly',
+    joi: 'readonly',
+    L: 'readonly',
     liff: 'readonly',
     moment: 'readonly',
     Papa: 'readonly',
