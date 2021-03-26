@@ -41,8 +41,7 @@ block style
 block content
   include /navbar
   #app.container.mt-3(v-cloak)
-    //- video(:src="`${voice}.mp3`" autoplay)
-    video(:src="`https://raw.githubusercontent.com/yuanchi17/pug/master/src/audio/${voice}.mp3`" autoplay)
+    video(:src="`https://raw.githubusercontent.com/yuanchi17/pug/master/src/audio/${process.voice}.mp3`" autoplay)
     #page-start.page.d-flex.flex-column(v-if="page === 'start'")
       h3.text-center.my-3 狼人殺
       label.form-check-label.mb-2 平民人數
@@ -80,8 +79,7 @@ block content
           h4.card-title.text-center.my-auto(v-else) 我是誰？
           button.btn.btn-secondary.btn-block.mt-auto(type="button", @click="btnNextRole(true)") {{ playerNo > roles.length ? '進入黑夜' : '查看角色' }}
     #page-night.page.d-flex.flex-column.justify-content-center(v-else-if="page === 'night'")
-      .all-close(v-if="process.status === 'close'")
-        h3.text-center {{ getRoleCh }}請閉眼
+      h3.text-center(v-if="process.status === 'close'") {{ getRoleCh }}請閉眼
       h3.text-center(v-else) {{ getRoleCh }}請睜眼
     #page-wolf.page.d-flex.flex-column.justify-content-center(v-else-if="page === 'wolf'")
       h3.text-center 狼人現身，你們要殺誰？
@@ -94,8 +92,8 @@ block content
         button.btn.btn-secondary.m-1(type="button", @click="btnProphetSkill(r.id)", v-for="r in roles" :key=r v-if="r.life") {{ _.padStart(r.id, 2, '0') }} 號
       button.btn.btn-secondary.m-1(type="button", @click="btnProphetNext()", v-else) 你已被殺死，請按我跳過
     #page-witch.page.d-flex.flex-column.justify-content-center(v-else-if="page === 'witch'")
-      h3.text-center 女巫{{ voice === 'witchOpen' ? '請睜眼' : '，你要毒誰？'}}
-      .show-number.d-flex.flex-wrap.justify-content-center(v-if="voice === 'witchKill'")
+      h3.text-center 女巫{{ process.voice === 'witchOpen' ? '請睜眼' : '，你要毒誰？'}}
+      .show-number.d-flex.flex-wrap.justify-content-center(v-if="process.voice === 'witchKill'")
         button.btn.btn-secondary.m-1(type="button", @click="btnWitchSkill(r.id)", v-for="r in roles" :key=r v-if="r.life") {{ _.padStart(r.id, 2, '0') }} 號
     #page-bright.page.d-flex.flex-column.justify-content-center(v-else-if="page === 'bright'")
       h3.text-center 天亮了，請睜眼
@@ -180,10 +178,10 @@ block script
           witch: true,
           hunter: true,
         },
-        voice: '', // 要說的音檔名稱
         process: { // 更新哪個角色要閉眼睜眼
           roleEn: '',
           status: 'close',
+          voice: '', // 要說的音檔名稱
         },
         playerNo: 0,
         role: {},
@@ -197,12 +195,27 @@ block script
       computed: {
         hasHunterOrWolfking () { return !!(_.find(this.roles, { name: '獵人' }) || _.find(this.roles, { name: '狼王' })) },
         getRoleCh () { return _.get(ROLE_LIST, this.process.roleEn, '') },
+        isGameOver () {
+          if (this.page !== 'bright') return false
+          const life = _.groupBy(_.get(_.groupBy(this.roles, 'life'), 'true'), 'type')
+
+          // 好人勝利
+          if (!_.get(life, 'wolf', []).length) {
+            this.game.winner = '好人'
+            this.game.loser = '狼人'
+            return true
+          }
+          // 狼人勝利
+          if (!_.get(life, 'people', []).length || !_.get(life, 'god', []).length) {
+            this.game.winner = '狼人'
+            this.game.loser = !_.get(life, 'people', []).length ? '人類' : '神職'
+            return true
+          }
+
+          return false
+        },
       },
       methods: {
-        async init () {
-          this.roles = []
-          this.page = 'start'
-        },
         async btnCheckCount () {
           // 轉換格式
           this.roles = _.compact(_.flatten(_.map(this.init, (count, role) => {
@@ -244,7 +257,7 @@ block script
             .sample()
             .set('id', this.playerNo + 1)
             .value()
-    
+
           console.log(`確認角色：${role.id} 號，${role.name}`)
           this.$set(this, 'role', role)
           this.playerNo++
@@ -260,25 +273,18 @@ block script
           await this.updateNight('wolf', 'open', 'wolfOpen')
         },
         async btnWolfSkill (rId) {
-          const result = await this.checkSelectAlert(`確認要殺 ${rId} 號？`)
-          if (!result.isConfirmed) return
+          if (!await this.checkSelectAlert(`確認要殺 ${rId} 號？`)) return
 
           this.willKill.push(rId)
           await this.updateNight('wolf', 'close', 'wolfClose')
           this.pageProphet()
         },
         async pageProphet () {
-          // 遊戲初始沒有預言家
-          if (!this.init.prophet) {
-            this.pageWitch()
-            return
-          }
-
+          if (!this.init.prophet) return this.pageWitch() // 遊戲初始沒有預言家
           await this.updateNight('prophet', 'open', 'prophetOpen')
         },
         async btnProphetSkill (rId) {
-          const result = await this.checkSelectAlert(`確認要查 ${rId} 號？`)
-          if (!result.isConfirmed) return
+          if (!await this.checkSelectAlert(`確認要查 ${rId} 號？`)) return
 
           const isWolf = this.roles[rId - 1].type === 'wolf'
           await Swal.fire({
@@ -290,19 +296,15 @@ block script
           this.pageWitch()
         },
         async pageWitch () {
-          // 遊戲初始沒有女巫
-          if (!this.init.witch) {
-            this.pageBright()
-            return
-          }
+          if (!this.init.witch) return this.pageBright() // 遊戲初始沒有女巫
 
           const witch = _.find(this.roles, { name: '女巫' })
           // 女巫睜眼，是否要使用解藥
           await this.updateNight('witch', 'open', 'witchOpen')
           if (!witch.life) {
-            await Swal.fire({ title: '你已被殺死，但流程還是要跑', confirmButtonText: '確定' })
+            await this.alert('你已被殺死，但流程還是要跑')
             await this.awaitChangeVoice('witchKill')
-            await Swal.fire({ title: '等等！別急著走，還有一次XD', confirmButtonText: '確定' })
+            await this.alert('等等！別急著走，還有一次XD')
             await this.updateNight('witch', 'close', 'witchClose')
             this.pageBright()
             return
@@ -312,7 +314,7 @@ block script
           await this.ashWitchUseKill(witch) // 是否要使用毒藥
         },
         async askWitchUseHelp (witch) {
-          if (!_.get(witch, 'skill.help')) await Swal.fire({ title: '你已使用過解藥', confirmButtonText: '確定' })
+          if (!_.get(witch, 'skill.help')) await this.alert('你已使用過解藥')
           else {
             // 是否要使用解藥
             const result = await Swal.fire({
@@ -330,7 +332,7 @@ block script
         async ashWitchUseKill (witch) {
           await this.awaitChangeVoice('witchKill')
           if (!_.get(witch, 'skill.kill')) {
-            await Swal.fire({ title: '你已使用過毒藥', confirmButtonText: '確定' })
+            await this.alert('你已使用過毒藥')
             await this.updateNight('witch', 'close', 'witchClose')
             this.pageBright()
             return
@@ -347,8 +349,7 @@ block script
           }
         },
         async btnWitchSkill (rId) {
-          const result = await this.checkSelectAlert(`確認要毒 ${rId} 號？`)
-          if (!result.isConfirmed) return
+          if (!await this.checkSelectAlert(`確認要毒 ${rId} 號？`)) return
 
           this.willKill.push(rId)
           _.set(_.find(this.roles, { name: '女巫' }), 'skill.kill', 0)
@@ -363,64 +364,44 @@ block script
 
           // 平安夜
           if (!willKill.length) {
-            this.voice = 'safeNight'
+            this.$set(this.process, 'voice', 'safeNight')
             return
           }
           _.each(willKill, rId => { this.roles[rId - 1].life = false })
-          this.game.status = this.isGameOver()
+          this.game.status = this.isGameOver
         },
         async btnTakeOneSkill (rId) { // 獵人、狼王的技能 TODO:發動技能後的流程確認
-          const result = await this.checkSelectAlert(`確認要帶走 ${rId} 號？`)
-          if (!result.isConfirmed) return
+          if (!await this.checkSelectAlert(`確認要帶走 ${rId} 號？`)) return
 
           this.roles[rId - 1].life = false
           this.page = 'bright'
-          this.game.status = this.isGameOver()
+          this.game.status = this.isGameOver
         },
         async updateNight (roleEn, status, voice) { // 更新哪個角色要閉眼睜眼
-          this.$set(this, 'voice', voice)
-          this.$set(this, 'process', { roleEn, status })
+          this.$set(this, 'process', { roleEn, status, voice })
           this.page = status === 'close' ? 'night' : roleEn
           await window.sleep(SECONDS)
         },
         async checkSelectAlert (title) {
-          return await Swal.fire({
+          return _.get(await Swal.fire({
             title,
             showCancelButton: true,
             cancelButtonText: '重選',
             confirmButtonText: '確定',
-          })
+          }), 'isConfirmed')
         },
         async btnProphetNext () {
           await this.updateNight('prophet', 'close', 'prophetClose')
           this.pageWitch()
         },
         async awaitChangeVoice (voice) {
-          // FIXME: this.voice = '' 因為找不到檔案會有 error，但也只能先這樣
-          this.$set(this, 'voice', '')
+          // FIXME: this.process.voice = '' 因為找不到檔案會有 error，但也只能先這樣
+          this.$set(this.process, 'voice', '')
           await window.sleep(100)
-          this.$set(this, 'voice', voice)
+          this.$set(this.process, 'voice', voice)
         },
-        isGameOver () {
-          if (this.page !== 'bright') return false
-
-          const life = _.groupBy(_.get(_.groupBy(this.roles, 'life'), 'true'), 'type')
-
-          // 好人勝利
-          if (!_.get(life, 'wolf', []).length) {
-            this.game.winner = '好人'
-            this.game.loser = '狼人'
-            return true
-          }
-
-          // 狼人勝利
-          if (!_.get(life, 'people', []).length || !_.get(life, 'god', []).length) {
-            this.game.winner = '狼人'
-            this.game.loser = !_.get(life, 'people', []).length ? '人類' : '神職'
-            return true
-          }
-
-          return false
+        async alert (title) {
+          await Swal.fire({ title, confirmButtonText: '確定' })
         },
       },
     })
