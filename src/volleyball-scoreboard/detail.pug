@@ -252,26 +252,35 @@ block script
           _.update(team, ['playerRecord', this.recordPlayer, recodeType, type], n => { return n ? n + 1 : 1 })
           team = Object.assign({}, team)
         },
-        updateScoreBoard (team, recodeType) {
-          // if A 隊失誤，應該是 B 隊加分
-          if (recodeType === 'faults') team = team === 'teamA' ? 'teamB' : 'teamA'
-          if (recodeType !== 'sub') team === 'teamA' ? this.teamA.score += 1 : this.teamB.score += 1
+        updateScoreBoard (team, recodeType, isSub = false) {
+          let scoreA = this.teamA.score
+          let scoreB = this.teamB.score
 
-          const index = this.teamA.score + this.teamB.score - 1
-          _.update(this.scoreBoard, [index, 'A'], s => { return team === 'teamA' ? this.teamA.score : '' })
-          _.update(this.scoreBoard, [index, 'B'], s => { return team === 'teamB' ? this.teamB.score : '' })
-          this.scoreBoard = Object.assign({}, this.scoreBoard)
+          // if A 隊失誤，調整 B 隊分數
+          if (recodeType === 'faults') team = team === 'teamA' ? 'teamB' : 'teamA'
+          if (!isSub) team === 'teamA' ? scoreA += 1 : scoreB += 1
+          else {
+            team === 'teamA' ? scoreA -= 1 : scoreB -= 1
+            team = '' // 兩隊的紀錄都要變空
+          }
+
+          const index = scoreA + scoreB - 1
+          this.$set(this.teamA, 'score', scoreA)
+          this.$set(this.teamB, 'score', scoreB)
+          this.$set(this.scoreBoard, isSub ? index + 1 : index, {
+            A: team === 'teamA' ? scoreA : '',
+            B: team === 'teamB' ? scoreB : '',
+          })
         },
         btnSubScore () { // 扣分，回上一步
           const lastScore = this.scoreOrder.pop() // { team: 'teamA', type: 'attacks.攻擊', player: 17}
           const lastTeamIsTeamA = lastScore.team === 'teamA'
-          const lastType = _.split(lastScore.type, '.')[0]
+          const lastType = _.split(lastScore.type, '.')[0] // attacks, faults
           let lastTeam = lastTeamIsTeamA ? this.teamA : this.teamB
 
           _.update(lastTeam, ['playerRecord', lastScore.player, ...(lastScore.type.split('.'))], n => { return n - 1 })
           lastTeam = Object.assign({}, lastTeam)
-          this.updateScoreBoard('', 'sub')
-          lastTeamIsTeamA && lastType !== 'faults' ? this.teamA.score -= 1 : this.teamB.score -= 1
+          this.updateScoreBoard(lastScore.team, lastType, true)
         },
         async btnChangeName () {
           const { value: teamAName } = await Swal.fire({
