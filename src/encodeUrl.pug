@@ -17,6 +17,8 @@ block style
       .input-group-text
         width: 120px
         background-color: white
+      textarea
+        min-height: 300px
 
 block content
   include /navbar
@@ -31,12 +33,13 @@ block content
         .input-group-text.justify-content-end 參數內容
       input.form-control(type="text" v-model="s.csv" placeholder="請填寫 CSV 網址")
     button.btn.btn-info(type="button" @click="btnEncodeUrl") 編譯網址
-    
+
     .card.mt-2(v-if="urls.length")
       .card-body
-        h5.card-title.font-weight-bold 編譯後的網址
-        ol
-          li(v-for="url in urls") {{ url }}
+        .d-flex.mb-3
+          h5.card-title.m-0.my-auto.mr-2.font-weight-bold 編譯後的所有網址
+          button.btn.btn-info.btn-sm(type="button" @click="btnCopy") 複製
+        textarea#copyUrls.form-control(type="text" v-model="urls")
 
 block script
   script.
@@ -45,7 +48,7 @@ block script
     window.vm = new Vue({
       el: '#app',
       data: {
-        urls: [],
+        urls: '',
         s: {
           baseUrl: '',
           csv: '',
@@ -64,7 +67,18 @@ block script
           const baseUrl = this.s.baseUrl
           const row = await this.getCsv(this.s.csv)
           this.urls = _.map(row, r => baseUrl + window.httpBuildQuery(r))
-          Swal.fire({ icon: 'success', title:'編譯成功' })
+          Swal.fire({ icon: 'success', title: '編譯成功' })
+        },
+        async btnCopy () {
+          try {
+            const obj = document.getElementById('copyUrls')
+            console.log(obj)
+            obj.select()
+            document.execCommand('copy')
+            Swal.fire({ icon: 'success', title: '複製成功' })
+          } catch (err) {
+            Swal.fire({ icon: 'err', title: '複製失敗', text: err.message })
+          }
         },
         async getCsv (url) {
           const csv = _.trim(_.get(await axios.get(url), 'data')) // _.trim：把前後多餘的空格修掉
