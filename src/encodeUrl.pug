@@ -1,0 +1,86 @@
+extends /layout
+
+block beforehtml
+  -
+    const title = '編譯網址工具'
+    const description = '使用 Qs 編譯多個帶參數的網址'
+
+block style
+  meta(name="description" content=description)
+  meta(property="og:description", content=description)
+  style
+    :sass
+      [v-cloak]
+        display: none
+      body 
+        margin-top: 55px
+      .input-group-text
+        width: 120px
+        background-color: white
+
+block content
+  include /navbar
+  #app.container.text-monospace.mb-3(v-cloak)
+    h3.pt-3.pb-2.m-0 編譯網址工具
+    .input-group
+      .input-group-prepend
+        .input-group-text.justify-content-end 前面的網址
+      input.form-control(type="text" v-model="s.baseUrl" placeholder="請填寫欲編譯的網址")
+    .input-group.my-2
+      .input-group-prepend
+        .input-group-text.justify-content-end 參數內容
+      input.form-control(type="text" v-model="s.csv" placeholder="請填寫 CSV 網址")
+    button.btn.btn-info(type="button" @click="btnEncodeUrl") 編譯網址
+    
+    .card.mt-2(v-if="urls.length")
+      .card-body
+        h5.card-title.font-weight-bold 編譯後的網址
+        ol
+          li(v-for="url in urls") {{ url }}
+
+block script
+  script.
+    const SESSION_KEY = 'pug-encodeUrl'
+    window.httpBuildQuery = (obj) => Qs.stringify(obj, { arrayFormat: 'brackets' })
+    window.vm = new Vue({
+      el: '#app',
+      data: {
+        urls: [],
+        s: {
+          baseUrl: '',
+          csv: '',
+        },
+      },
+      async mounted () {
+        const session = JSON.parse(localStorage.getItem(SESSION_KEY))
+        if (session) this.$set(this, 's', session)
+        this.$watch('s', () => {
+          localStorage.setItem(SESSION_KEY, JSON.stringify(this.s))
+        }, { deep: true })
+      },
+      methods: {
+        async btnEncodeUrl () {
+          this.showLoading('請稍後', '編譯網址中')
+          const baseUrl = this.s.baseUrl
+          const row = await this.getCsv(this.s.csv)
+          this.urls = _.map(row, r => baseUrl + window.httpBuildQuery(r))
+          Swal.fire({ icon: 'success', title:'編譯成功' })
+        },
+        async getCsv (url) {
+          const csv = _.trim(_.get(await axios.get(url), 'data')) // _.trim：把前後多餘的空格修掉
+          return _.get(Papa.parse(csv, {
+            encoding: 'utf8',
+            header: true,
+          }), 'data', [])
+        },
+        async showLoading (title, text) {
+          await Swal.fire({
+            title,
+            text,
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            willOpen: () => { Swal.showLoading() },
+          })
+        },
+      },
+    })
