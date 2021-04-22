@@ -66,13 +66,12 @@ block script
           this.showLoading('請稍後', '編譯網址中')
           const baseUrl = this.s.baseUrl
           const row = await this.getCsv(this.s.csv)
-          this.urls = _.map(row, r => baseUrl + window.httpBuildQuery(r))
+          this.urls = _.map(row, r => baseUrl + window.httpBuildQuery(r)).join('\n')
           Swal.fire({ icon: 'success', title: '編譯成功' })
         },
         async btnCopy () {
           try {
             const obj = document.getElementById('copyUrls')
-            console.log(obj)
             obj.select()
             document.execCommand('copy')
             Swal.fire({ icon: 'success', title: '複製成功' })
