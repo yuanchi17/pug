@@ -63,11 +63,16 @@ block script
       },
       methods: {
         async btnEncodeUrl () {
-          this.showLoading('請稍後', '編譯網址中')
-          const baseUrl = this.s.baseUrl
-          const row = await this.getCsv(this.s.csv)
-          this.urls = _.map(row, r => baseUrl + window.httpBuildQuery(r)).join('\n')
-          Swal.fire({ icon: 'success', title: '編譯成功' })
+          try {
+            this.showLoading('請稍後', '編譯網址中')
+            const baseUrl = this.s.baseUrl
+            const row = await this.getCsv(this.s.csv)
+            this.urls = _.map(row, r => baseUrl + window.httpBuildQuery(r)).join('\n')
+            Swal.fire({ icon: 'success', title: '編譯成功' })
+          } catch (err) {
+            console.error(err)
+            Swal.fire({ icon: 'err', title: '編譯失敗', text: err.message })
+          }
         },
         async btnCopy () {
           try {
@@ -76,6 +81,7 @@ block script
             document.execCommand('copy')
             Swal.fire({ icon: 'success', title: '複製成功' })
           } catch (err) {
+            console.error(err)
             Swal.fire({ icon: 'err', title: '複製失敗', text: err.message })
           }
         },
