@@ -38,7 +38,7 @@ block content
       .card-body
         .d-flex.mb-3
           h5.card-title.m-0.my-auto.mr-2.font-weight-bold 編譯後的所有網址
-          button.btn.btn-info.btn-sm(type="button" @click="btnCopy") 複製
+          button.btn.btn-info.btn-sm(type="button" @click="btnCopy()") 複製
         textarea#copyUrls.form-control(type="text" v-model="urls")
 
 block script
@@ -68,17 +68,22 @@ block script
             const baseUrl = this.s.baseUrl
             const row = await this.getCsv(this.s.csv)
             this.urls = _.map(row, r => baseUrl + window.httpBuildQuery(r)).join('\n')
-            Swal.fire({ icon: 'success', title: '編譯成功' })
+            
+            this.btnCopy(true)
           } catch (err) {
             console.error(err)
             Swal.fire({ icon: 'err', title: '編譯失敗', text: err.message })
           }
         },
-        async btnCopy () {
+        async btnCopy (auto = false) {
           try {
             const obj = document.getElementById('copyUrls')
             obj.select()
             document.execCommand('copy')
+            if (auto) {
+              Swal.fire({ icon: 'success', title: '編譯成功', text: '已複製' })
+              return
+            }
             Swal.fire({ icon: 'success', title: '複製成功' })
           } catch (err) {
             console.error(err)
