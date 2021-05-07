@@ -199,37 +199,47 @@ block script
       el: '#app',
       data: {
         mapZoom: 15,
+        sId: null,
+        trafficStations: [],
         visible: {},
+        ybStations: [],
         src: {
           youbike: 'https://gcs-youbike2-linebot.taichunmin.idv.tw/latest-data/youbike-station.csv',
           traffic: 'https://gist.githubusercontent.com/yuanchi17/e4642d8d84ff9cd7c76ab89ef768d22a/raw/maps-traffic.csv',
         },
       },
       async mounted () {
-        moment.locale('zh-tw')
-        this.initMap()
-        this.initStations()
+        try {
+          this.showLoading('請稍候', '地圖載入中')
+          moment.locale('zh-tw')
+          const tmp = await Promise.all([
+            this.getYouBikeStations(),
+            this.getCsv(this.src.traffic),
+          ])
+          this.$set(this, 'ybStations', tmp[0])
+          this.$set(this, 'trafficStations', tmp[1])
+          await this.getStation()
+          this.initMap()
+          this.initStations()
+          Swal.close()
+        } catch(err){}
       },
       methods: {
         async initMap () {
-          const [DEFAULT_LAT, DEFAULT_LNG, DEFAULT_ZOOM] = [24.152, 120.646, 15]
+          const coord = {
+            lat: _.get(this.station, 'lat', 24.152),
+            lng: _.get(this.station, 'lng', 120.646),
+            zoom: 15,
+          }
           const tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attribution">CARTO</a>',
           })
           map = L.map('map', {
-            center: [DEFAULT_LAT, DEFAULT_LNG],
-            zoom: DEFAULT_ZOOM,
+            center: [coord.lat, coord.lng],
+            zoom: coord.zoom,
             layers: [tiles],
             tap: false, //- https://github.com/Leaflet/Leaflet/issues/3184
           })
-          L.marker([DEFAULT_LAT, DEFAULT_LNG], {
-            icon: L.icon({
-              iconAnchor: [10, 36],
-              iconSize: [20, 38],
-              iconUrl: `${IMAGE_BASEURL}marker.png?t=20210324`,
-              popupAnchor: [0, -38],
-            }),
-          }).addTo(map)
           L.control.locate({
             position: 'topleft',
             strings: {
@@ -255,10 +265,7 @@ block script
         async initStations () {
           const saved = window.parseJsonOrDefault(localStorage.getItem('traffic-maps-visible'), {})
           // 根據 type 進行分組
-          const types = window.types = _.groupBy(_.flatten(await Promise.all([
-            this.getYouBikeStations(),
-            this.getCsv(this.src.traffic),
-          ])), 'type')
+          const types = window.types = _.groupBy(_.flatten([this.ybStations, this.trafficStations]), 'type')
 
           _.each(types, async (stations, type) => {
             const classType = type => {
@@ -290,6 +297,7 @@ block script
               }
               const marker = L.marker([s.lat, s.lng], { icon: stationToIcon(s) })
                 .bindPopup(stationToPopup(s), { minWidth: 200 })
+              if (this.sId === s.id) focus = marker
               return marker
             }))
             this.$set(this.visible, type, false)
@@ -301,7 +309,25 @@ block script
               }
             })
             if (_.get(saved, type, true)) this.$set(this.visible, type, true)
+            if (focus) {
+              await window.sleep(100)
+              focus.openPopup()
+            }
           })
+        },
+        async getStation () {
+          try {
+            const tmp = _.fromPairs(_.map(this.ybStations, s=> { return [s.id, { lat: s.lat, lng: s.lng }]}))
+            this.$set(this, 'sId', parseInt(this.param('sId', 500606002))) // 指定站點ID || 捷運市政府(出口1)
+            this.station = tmp[this.sId] // 指定站點的經緯度
+            console.log(`指定站點 ${this.sId}：`, this.station)
+            if (!this.station) throw new Error(`找不到指定站點 ID：${this.sId}`)
+          } catch (err) {
+            err.message = _.get(err, 'response.data.message', err.message)
+            console.error(err)
+            await Swal.fire({ icon: 'error', title: '發生錯誤', text: err.message })
+            throw err
+          }
         },
         async addCircle ({ lat, lng, className, fillColor, fillOpacity, radius }) {
           L.circle([lat, lng], {
@@ -325,9 +351,10 @@ block script
           const val = new URL(location).searchParams.get(key)
           return _.isNil(val) ? defaultValue : val
         },
-        showLoading (title) {
+        showLoading (title, text) {
           Swal.fire({
             title,
+            text,
             allowOutsideClick: false,
             showConfirmButton: false,
             willOpen: () => { Swal.showLoading() },
