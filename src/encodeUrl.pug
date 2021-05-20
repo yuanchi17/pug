@@ -44,6 +44,7 @@ block content
 block script
   script.
     const SESSION_KEY = 'pug-encodeUrl'
+    window.sleep = t => new Promise(resolve => { setTimeout(resolve, t) })
     window.httpBuildQuery = (obj) => Qs.stringify(obj, { arrayFormat: 'brackets' })
     window.vm = new Vue({
       el: '#app',
@@ -69,6 +70,7 @@ block script
             const row = await this.getCsv(this.s.csv)
             this.urls = _.map(row, r => baseUrl + window.httpBuildQuery(r)).join('\n')
             
+            await window.sleep(100)
             this.btnCopy(true)
           } catch (err) {
             console.error(err)
