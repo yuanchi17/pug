@@ -314,7 +314,7 @@ block script
             buttonText: next ? '下一隊' : '清除',
             text: next ? '選擇「下一隊」，之前的總紀錄都會消失！你可以先至「總紀錄」截圖保存，再繼續下一隊的比賽。' : '清除紀錄後將無法挽回！',
           })
-          if (!result.isConfirmed) return
+          if (!result.isConfirmed) return await this.btnShowStoryRecord()
 
           this.init()
         },

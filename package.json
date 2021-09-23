@@ -24,6 +24,7 @@
     "fast-glob": "^3.2.4",
     "finalhandler": "^1.1.2",
     "jstransformer-sass": "^1.0.0",
+    "jstransformer-scss": "taichunmin/jstransformer-scss.git",
     "lodash": "^4.17.20",
     "ncp": "^2.0.0",
     "pug": "^3.0.0",
@@ -33,5 +34,8 @@
   "devDependencies": {
     "livereload": "^0.9.1",
     "node-watch": "^0.7.1"
+  },
+  "resolutions": {
+    "**/jstransformer-scss": "taichunmin/jstransformer-scss.git"
   }
 }
