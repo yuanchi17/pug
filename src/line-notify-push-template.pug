@@ -164,7 +164,6 @@ block script
                 pushStatus.success++ // 推送成功
               } catch (err) {
                 err.message = _.get(err, 'response.data.message', err.message)
-                if (_.get(err, 'response.data.status') === 400) throw new Error(`推送訊息格式錯誤：${err.message}`)
                 errors.push(`第 ${pushStatus.count} 位使用者訊息推送失敗：${err.message}`)
                 console.error(err)
               }
