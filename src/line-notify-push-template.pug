@@ -119,8 +119,6 @@ block script
           }, { deep: true })
         },
         async btnPushMsg () {
-          const errors = []
-          this.errors = ''
           this.pushStatus = { success: 0, count: 0, userCount: 0, finish: false }
           try {
             const data = this.s
@@ -148,33 +146,31 @@ block script
             this.showLoading('請稍後', '編譯訊息樣版中')
             const templateMsgs = this.compileTemplate(data.msgs)
 
-            for (const row of rows) {
-              try {
-                pushStatus.count++
-                this.showLoading('請稍後', '編譯訊息中')
-                const notifyMsgs = _.map(templateMsgs, msg => _.mapValues(msg, m => m({ Qs, _, row })))
+            for (let chunk of _.chunk(rows, 50)) {
+              await Promise.all(_.map(chunk, async row => {
+                try {
+                  pushStatus.count++
+                  const notifyMsgs = _.map(templateMsgs, msg => _.mapValues(msg, m => m({ Qs, _, row })))
 
-                for (const [i, notifyMsg] of _.toPairs(notifyMsgs)) {
-                  this.showLoading('請稍後', `正在推送給第 ${pushStatus.count}／${pushStatus.userCount} 位使用者，第 ${_.parseInt(i) + 1} 筆訊息`)
-                  await this.apiNotify({
-                    accessToken: row.access_token,
-                    notifyMsg,
-                  })
+                  for (const [i, notifyMsg] of _.toPairs(notifyMsgs)) {
+                    await this.apiNotify({
+                      accessToken: row.access_token,
+                      notifyMsg,
+                    })
+                  }
+                  pushStatus.success++ // 推送成功
+                } catch (err) {
+                  err.message = `第 ${pushStatus.count} 位發生錯誤: ${_.get(err, 'response.data.message', err.message)}`
+                  console.error(err)
                 }
-                pushStatus.success++ // 推送成功
-              } catch (err) {
-                err.message = _.get(err, 'response.data.message', `第 ${pushStatus.count} 位發生錯誤: ${err.message}`)
-                errors.push(`第 ${pushStatus.count} 位使用者訊息推送失敗：${err.message}`)
-                console.error(err)
-              }
+              }))
+              this.showLoading('請稍後', `已推送給 ${pushStatus.count}／${pushStatus.userCount} 位使用者`)
             }
           } catch (err) {
             console.error(err)
-            errors.push(err.message)
             Swal.fire({ icon: 'error', title: '推送失敗', text: err.message })
           }
           Swal.close()
-          this.errors = errors.join('\n')
           this.pushStatus.finish = true
         },
         async btnShareMsg () {
@@ -286,7 +282,7 @@ block script
         },
         async apiNotify ({ accessToken, notifyMsg }) {
           try {
-            await axios.post('https://us-central1-yuanchi.cloudfunctions.net/cors-anywhere', Qs.stringify(notifyMsg), {
+            await axios.post('https://us-central1-youbike2-linebot.cloudfunctions.net/cors-anywhere', Qs.stringify(notifyMsg), {
               params: { u: 'https://notify-api.line.me/api/notify' },
               headers: {
                 Authorization: `Bearer ${accessToken}`,
