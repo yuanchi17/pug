@@ -147,7 +147,7 @@ block script
             const templateMsgs = this.compileTemplate(data.msgs)
             this.showLoading('請稍後', `已推送給 0／${pushStatus.userCount} 位使用者`)
 
-            for (let chunk, chunkId of _.chunk(_.toPairs(rows), 50)) {
+            for (let [chunkId, chunk] of _.toPairs(_.chunk(_.toPairs(rows), 50))) {
               await Promise.all(_.map(chunk, async ([rowId, row]) => {
                 try {
                   const notifyMsgs = _.map(templateMsgs, msg => _.mapValues(msg, m => m({ Qs, _, row })))
