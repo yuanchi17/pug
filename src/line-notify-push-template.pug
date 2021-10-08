@@ -163,7 +163,7 @@ block script
                 }
                 pushStatus.success++ // 推送成功
               } catch (err) {
-                err.message = _.get(err, 'response.data.message', err.message)
+                err.message = _.get(err, 'response.data.message', `第 ${pushStatus.count} 位發生錯誤: ${err.message}`)
                 errors.push(`第 ${pushStatus.count} 位使用者訊息推送失敗：${err.message}`)
                 console.error(err)
               }
@@ -321,8 +321,8 @@ block script
           if (result.isDenied) window.open('https://line.me/R/ti/p/@736cebrk')
           if (result.isConfirmed) window.open('https://developers.line.biz/en/docs/messaging-api/sticker-list/#sticker-definitions')
         },
-        async showLoading (title, text) {
-          await Swal.fire({
+        showLoading (title, text) {
+          Swal.fire({
             title,
             text,
             allowOutsideClick: false,
