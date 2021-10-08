@@ -156,7 +156,7 @@ block script
 
                 for (const [i, notifyMsg] of _.toPairs(notifyMsgs)) {
                   this.showLoading('請稍後', `正在推送給第 ${pushStatus.count}／${pushStatus.userCount} 位使用者，第 ${_.parseInt(i) + 1} 筆訊息`)
-                  await this.notify({
+                  await this.apiNotify({
                     accessToken: row.access_token,
                     notifyMsg,
                   })
@@ -285,13 +285,20 @@ block script
         compileTemplate (msgs) {
           return _.map(msgs, msg => _.mapValues(msg, _.template))
         },
-        async notify ({ accessToken, notifyMsg }) {
-          await axios.post('https://us-central1-yuanchi.cloudfunctions.net/cors-anywhere', Qs.stringify(notifyMsg), {
-            params: { u: 'https://notify-api.line.me/api/notify' },
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          })
+        async apiNotify ({ accessToken, notifyMsg }) {
+          try {
+            await axios.post('https://us-central1-yuanchi.cloudfunctions.net/cors-anywhere', Qs.stringify(notifyMsg), {
+              params: { u: 'https://notify-api.line.me/api/notify' },
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            })
+          } catch (err) {
+            err.message = _.get(err, 'response.data.message', err.message)
+            err.status = _.get(err, 'response.status', 500)
+            if (err.status === 401) err.message = `token 已失效 (${token})`
+            throw err
+          }
         },
         async getCsv (url) {
           const csv = _.trim(_.get(await axios.get(url), 'data')) // _.trim：把前後多餘的空格修掉
