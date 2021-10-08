@@ -145,11 +145,11 @@ block script
 
             this.showLoading('請稍後', '編譯訊息樣版中')
             const templateMsgs = this.compileTemplate(data.msgs)
+            this.showLoading('請稍後', `已推送給 0／${pushStatus.userCount} 位使用者`)
 
-            for (let chunk of _.chunk(rows, 50)) {
-              await Promise.all(_.map(chunk, async row => {
+            for (let chunk, chunkId of _.chunk(_.toPairs(rows), 50)) {
+              await Promise.all(_.map(chunk, async ([rowId, row]) => {
                 try {
-                  pushStatus.count++
                   const notifyMsgs = _.map(templateMsgs, msg => _.mapValues(msg, m => m({ Qs, _, row })))
 
                   for (const [i, notifyMsg] of _.toPairs(notifyMsgs)) {
@@ -160,11 +160,11 @@ block script
                   }
                   pushStatus.success++ // 推送成功
                 } catch (err) {
-                  err.message = `第 ${pushStatus.count} 位發生錯誤: ${_.get(err, 'response.data.message', err.message)}`
+                  err.message = `第 ${rowId + 1} 位發生錯誤: ${_.get(err, 'response.data.message', err.message)}`
                   console.error(err)
                 }
               }))
-              this.showLoading('請稍後', `已推送給 ${pushStatus.count}／${pushStatus.userCount} 位使用者`)
+              this.showLoading('請稍後', `已推送給 ${chunkId * 50}／${pushStatus.userCount} 位使用者`)
             }
           } catch (err) {
             console.error(err)
