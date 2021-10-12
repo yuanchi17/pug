@@ -92,7 +92,7 @@ block script
       el: '#app',
       data: {
         errors: '',
-        pushStatus: {}, // 推送狀態
+        pushStatus: { success: 0, count: 0, userCount: 0, finish: false }, // 推送狀態
         s: {
           csv: '',
           msgs: [
@@ -119,7 +119,7 @@ block script
           }, { deep: true })
         },
         async btnPushMsg () {
-          this.pushStatus = { success: 0, count: 0, userCount: 0, finish: false }
+          this.$set(this, 'pushStatus', { success: 0, count: 0, userCount: 0, finish: false })
           try {
             const data = this.s
             this.checkMsgs(data.msgs)
@@ -147,12 +147,12 @@ block script
             const templateMsgs = this.compileTemplate(data.msgs)
             this.showLoading('請稍後', `已推送給 0／${pushStatus.userCount} 位使用者`)
 
-            for (let [chunkId, chunk] of _.toPairs(_.chunk(_.toPairs(rows), 50))) {
+            for (const [chunkId, chunk] of _.toPairs(_.chunk(_.toPairs(rows), 50))) {
               await Promise.all(_.map(chunk, async ([rowId, row]) => {
                 try {
                   const notifyMsgs = _.map(templateMsgs, msg => _.mapValues(msg, m => m({ Qs, _, row })))
 
-                  for (const [i, notifyMsg] of _.toPairs(notifyMsgs)) {
+                  for (const notifyMsg of notifyMsgs) {
                     await this.apiNotify({
                       accessToken: row.access_token,
                       notifyMsg,
@@ -160,11 +160,11 @@ block script
                   }
                   pushStatus.success++ // 推送成功
                 } catch (err) {
-                  err.message = `第 ${rowId + 1} 位發生錯誤: ${_.get(err, 'response.data.message', err.message)}`
+                  err.message = `第 ${_.parseInt(rowId) + 1} 位發生錯誤: ${_.get(err, 'response.data.message', err.message)}`
                   console.error(err)
                 }
               }))
-              this.showLoading('請稍後', `已推送給 ${chunkId * 50}／${pushStatus.userCount} 位使用者`)
+              this.showLoading('請稍後', `已推送給 ${(_.parseInt(chunkId) + 1) * 50}／${pushStatus.userCount} 位使用者`)
             }
           } catch (err) {
             console.error(err)
@@ -193,7 +193,7 @@ block script
               .map(this.getShareMsgs)
               .flatten()
               .chunk(5)
-              .value() 
+              .value()
 
             for (const [chunkNo, chunk] of _.toPairs(chunks)) {
               this.showLoading('分享測試訊息', `分享 (${_.parseInt(chunkNo) + 1} / ${chunks.length}) 次`)
@@ -291,7 +291,7 @@ block script
           } catch (err) {
             err.message = _.get(err, 'response.data.message', err.message)
             err.status = _.get(err, 'response.status', 500)
-            if (err.status === 401) err.message = `token 已失效 (${token})`
+            if (err.status === 401) err.message = `token 已失效 (${accessToken})`
             throw err
           }
         },

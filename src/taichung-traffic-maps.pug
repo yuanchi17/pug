@@ -214,7 +214,7 @@ block script
           await this.getStation() // 指定站點
           this.initMap()
           this.initStations()
-        } catch(err){}
+        } catch (err) {}
       },
       methods: {
         async initMap () {
@@ -259,6 +259,7 @@ block script
           // 根據 type 進行分組
           const types = window.types = _.groupBy(_.flatten([this.ybStations, this.trafficStations]), 'type')
 
+          let focus = null
           _.each(types, async (stations, type) => {
             const classType = type => {
               if (type === '1' || type === '2') return `yb${type}`
@@ -316,7 +317,7 @@ block script
             this.$set(this, 'ybStations', tmp[0])
             this.$set(this, 'trafficStations', tmp[1])
 
-            const ybStationTmp = _.fromPairs(_.map(this.ybStations, s=> { return [s.id, { lat: s.lat, lng: s.lng }]}))
+            const ybStationTmp = _.fromPairs(_.map(this.ybStations, s => { return [s.id, { lat: s.lat, lng: s.lng }] }))
             this.$set(this, 'sId', parseInt(this.param('sId', 500606002))) // 指定站點ID || 捷運市政府(出口1)
             this.station = ybStationTmp[this.sId] // 指定站點的經緯度
 

@@ -69,7 +69,7 @@ block script
             const baseUrl = this.s.baseUrl
             const row = await this.getCsv(this.s.csv)
             this.urls = _.map(row, r => baseUrl + window.httpBuildQuery(r)).join('\n')
-            
+
             await window.sleep(100)
             this.btnCopy(true)
           } catch (err) {

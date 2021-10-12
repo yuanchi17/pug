@@ -218,7 +218,7 @@ block script
         },
         async getStations () {
           const someSids = _.map(await this.getCsv(this.someSids), t => _.toSafeInteger(t.sid)) // 欲顯示的特定站點
-          const stations = _.filter(await this.getCsv(this.src), t=> { return someSids.indexOf(_.toSafeInteger(t.id)) !== -1 } )
+          const stations = _.filter(await this.getCsv(this.src), t => { return someSids.indexOf(_.toSafeInteger(t.id)) !== -1 })
 
           const nowts = Date.now()
           return _.filter(await Promise.all(_.map(stations, async s => {
