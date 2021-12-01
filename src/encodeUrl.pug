@@ -15,26 +15,49 @@ block style
       body 
         margin-top: 55px
       .input-group-text
-        width: 120px
         background-color: white
       textarea
         min-height: 300px
+      .nav-tabs 
+        border-bottom: none
+      img
+        border: solid 1px #ddd
+        width: 100%
 
 block content
   include /navbar
   #app.container.text-monospace.mb-3(v-cloak)
-    h3.pt-3.pb-2.m-0 編譯網址工具
-    .input-group
+    h3.pt-3.m-0 編譯網址工具
+    .input-group.my-3
       .input-group-prepend
         .input-group-text.justify-content-end 前面的網址
       input.form-control(type="text" v-model="s.baseUrl" placeholder="請填寫欲編譯的網址")
-    .input-group.my-2
-      .input-group-prepend
-        .input-group-text.justify-content-end 參數內容
-      input.form-control(type="text" v-model="s.csv" placeholder="請填寫 CSV 網址")
-    button.btn.btn-info(type="button" @click="btnEncodeUrl") 編譯網址
+    ul.nav.nav-tabs
+      li.nav-item(@click="nav = 'params'")
+        a#tab-params.nav-link.active(data-toggle="tab" href="#params" role="tab" aria-controls="params" aria-selected="true") 一個網址
+      li.nav-item(@click="nav = 'csv'")
+        a#tab-csv.nav-link(data-toggle="tab" href="#csv" role="tab" aria-controls="csv" aria-selected="false") 多個網址
+    .tab-content
+      #params.card.tab-pane.show.active(role="tabpanel" aria-labelledby="params-tab")
+        .card-body
+          .d-flex.my-2(v-for="(param, pId) of s.params", :key="pId")
+            .input-group
+              .input-group-prepend
+                .input-group-text.py-0 {{ pId + 1 }}
+              input.form-control(type="text" v-model="param[0]" placeholder="key")
+              input.form-control(type="text" v-model="param[1]" placeholder="value")
+            button.btn.btn-danger.mx-2(type="button" @click="btnDel(pId)", v-if="s.params.length > 1") #[i.fa.fa-times]
+            button.btn.btn-success.mx-2(type="button" @click="btnAdd", v-else) #[i.fa.fa-plus]
+          .d-flex: button.btn.btn-success.ml-auto.mx-2(type="button" @click="btnAdd", v-if="s.params.length > 1") #[i.fa.fa-plus]
+      #csv.card.tab-pane(role="tabpanel" aria-labelledby="csv-tab")
+        .card-body
+          .input-group
+            input.form-control(type="text" v-model="s.csv" placeholder="請填寫 CSV 網址")
+          p.my-2 CSV 欄位範例
+          img(src="https://i.imgur.com/AeqqpCw.png")
+    button.btn.btn-info.my-2(type="button" @click="btnEncodeUrl") 編譯網址
 
-    .card.mt-2(v-if="urls.length")
+    .card(v-if="urls.length")
       .card-body
         .d-flex.mb-3
           h5.card-title.m-0.my-auto.mr-2.font-weight-bold 編譯後的所有網址
@@ -50,9 +73,11 @@ block script
       el: '#app',
       data: {
         urls: '',
+        nav: 'params',
         s: {
           baseUrl: '',
           csv: '',
+          params: [['', '']],
         },
       },
       async mounted () {
@@ -67,8 +92,17 @@ block script
           try {
             this.showLoading('請稍後', '編譯網址中')
             const baseUrl = this.s.baseUrl
-            const row = await this.getCsv(this.s.csv)
-            this.urls = _.map(row, r => baseUrl + window.httpBuildQuery(r)).join('\n')
+            let row
+            if (this.nav === 'csv') {
+              row = await this.getCsv(this.s.csv)
+              this.urls = _.map(row, r => baseUrl + window.httpBuildQuery(r)).join('\n')
+            } else {
+              row = _.chain(this.s.params)
+                .filter(param => { return param[0] && param[1] })
+                .fromPairs()
+                .value()
+              this.urls = baseUrl + window.httpBuildQuery(row)
+            }
 
             await window.sleep(100)
             this.btnCopy(true)
@@ -91,6 +125,16 @@ block script
             console.error(err)
             Swal.fire({ icon: 'err', title: '複製失敗', text: err.message })
           }
+        },
+        async btnAdd () {
+          const params = _.get(this.s, 'params', [])
+          params.push(['', ''])
+          this.$set(this.s, 'params', params)
+        },
+        async btnDel (pId) {
+          const params = _.get(this.s, 'params', [])
+          params.splice(pId, 1)
+          this.$set(this.s, 'params', params)
         },
         async getCsv (url) {
           const csv = _.trim(_.get(await axios.get(url), 'data')) // _.trim：把前後多餘的空格修掉
