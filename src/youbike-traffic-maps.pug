@@ -94,10 +94,10 @@ block content
     #visible.leaflet-bar.leaflet-control.unselectable.text-monospace(v-if="_.keys(visible).length === (_.map(TYPE_CTX).length + 2)")
       .custom-control.custom-switch(v-for="(v, k) in visible", :key="k", v-if="open")
         input.custom-control-input(type="checkbox", v-model="visible[k]", :id="`switch-visible${k}`")
-        label.p-1.my-1.custom-control-label.rounded.switch-visible3(:for="`switch-visible${k}`" v-if="k==='3'") 台中捷運 MRT
-        label.p-1.my-1.custom-control-label.rounded.switch-visible4(:for="`switch-visible${k}`" v-else-if="k==='4'") 台中台鐵 TRA
-        label.p-1.my-1.custom-control-label.rounded.switch-visible5(:for="`switch-visible${k}`" v-else-if="k==='5'") 雙北捷運 MRT
-        label.p-1.my-1.custom-control-label.rounded.switch-visible6(:for="`switch-visible${k}`" v-else-if="k==='6'") 雙北台鐵 TRA
+        label.px-1.my-1.custom-control-label.rounded.switch-visible3(:for="`switch-visible${k}`" v-if="k==='3'") 台中捷運 MRT
+        label.px-1.my-1.custom-control-label.rounded.switch-visible4(:for="`switch-visible${k}`" v-else-if="k==='4'") 台中台鐵 TRA
+        label.px-1.my-1.custom-control-label.rounded.switch-visible5(:for="`switch-visible${k}`" v-else-if="k==='5'") 雙北捷運 MRT
+        label.px-1.my-1.custom-control-label.rounded.switch-visible6(:for="`switch-visible${k}`" v-else-if="k==='6'") 雙北台鐵 TRA
         label.px-1.my-1.custom-control-label(:for="`switch-visible${k}`" v-else) YouBike {{ k }}.0
       .d-flex.border-top.mt-1.pt-1(@click="open = !open"): small.mx-auto {{ open ? '收合' : '展開' }}
     #map
@@ -236,8 +236,8 @@ block script
       methods: {
         async initMap () {
           const coord = {
-            lat: _.get(this.station, 'lat', 24.152),
-            lng: _.get(this.station, 'lng', 120.646),
+            lat: _.get(this.station, 'lat', 25.0282849), // 預設中心為 YB 辦公室
+            lng: _.get(this.station, 'lng', 121.5560972),
             zoom: 15,
           }
           const tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png', {
