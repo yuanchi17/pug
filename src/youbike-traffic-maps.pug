@@ -50,15 +50,6 @@ block style
           box-shadow: none
         &.leaflet-tooltip-top:before
           border: none
-      .hide-circle
-        .traffic3-circle, .traffic4-circle
-          visibility: hidden
-      .hide-traffic3-circle
-        .traffic3-circle
-          visibility: hidden
-      .hide-traffic4-circle
-        .traffic4-circle
-          visibility: hidden
       .marker-cluster-yb1
         background-color: rgba(255, 158, 21, 0.5)
         >div
@@ -68,6 +59,22 @@ block style
         >div
           background-color: rgba(162, 41, 41, 0.4)
           color: #ffffff
+      //- type !== 1、2
+      .hide-circle
+        .traffic3-circle, .traffic4-circle, .traffic5-circle, .traffic6-circle
+          visibility: hidden
+      .hide-traffic3-circle
+        .traffic3-circle
+          visibility: hidden
+      .hide-traffic4-circle
+        .traffic4-circle
+          visibility: hidden
+      .hide-traffic5-circle
+        .traffic5-circle
+          visibility: hidden
+      .hide-traffic6-circle
+        .traffic6-circle
+          visibility: hidden
       .marker-cluster-traffic3, .marker-cluster-traffic5
         background-color: rgba(0, 190, 255, 0.5)
         >div
@@ -83,7 +90,7 @@ block style
         background: rgba(215, 65, 240, .4)
         width: 100%
 block content
-  #app(v-cloak, :class="{'hide-circle': mapZoom < 12, 'hide-traffic3-circle': !visible[3], 'hide-traffic4-circle': !visible[4], 'hide-traffic5-circle': !visible[5]}")
+  #app(v-cloak, :class="{ 'hide-circle': mapZoom < 12, 'hide-traffic3-circle': !visible[3], 'hide-traffic4-circle': !visible[4], 'hide-traffic5-circle': !visible[5], 'hide-traffic6-circle': !visible[6] }")
     #visible.leaflet-bar.leaflet-control.unselectable.text-monospace(v-if="_.keys(visible).length === (_.map(TYPE_CTX).length + 2)")
       .custom-control.custom-switch(v-for="(v, k) in visible", :key="k", v-if="open")
         input.custom-control-input(type="checkbox", v-model="visible[k]", :id="`switch-visible${k}`")
