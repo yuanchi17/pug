@@ -68,36 +68,31 @@ block style
         >div
           background-color: rgba(162, 41, 41, 0.4)
           color: #ffffff
-      .marker-cluster-traffic3
+      .marker-cluster-traffic3, .marker-cluster-traffic5
         background-color: rgba(0, 190, 255, 0.5)
         >div
           background-color: rgba(0, 190, 255, 0.5)
-      .switch-visible3 
+      .switch-visible3, .switch-visible5
         background: rgba(0, 190, 255, .4)
         width: 100%
-      .marker-cluster-traffic4
+      .marker-cluster-traffic4, .marker-cluster-traffic6
         background-color: rgba(215, 65, 240, 0.5)
         >div
           background-color: rgba(215, 65, 240, 0.5)
-      .switch-visible4 
+      .switch-visible4, .switch-visible6
         background: rgba(215, 65, 240, .4)
-        width: 100%
-      .marker-cluster-traffic5
-        background-color: rgba(255, 71, 78, 0.5)
-        >div
-          background-color: rgba(255, 71, 78, 0.5)
-      .switch-visible5 
-        background: rgba(255, 71, 78, .4)
         width: 100%
 block content
   #app(v-cloak, :class="{'hide-circle': mapZoom < 12, 'hide-traffic3-circle': !visible[3], 'hide-traffic4-circle': !visible[4], 'hide-traffic5-circle': !visible[5]}")
     #visible.leaflet-bar.leaflet-control.unselectable.text-monospace(v-if="_.keys(visible).length === (_.map(TYPE_CTX).length + 2)")
-      .custom-control.custom-switch(v-for="(v, k) in visible", :key="k")
+      .custom-control.custom-switch(v-for="(v, k) in visible", :key="k", v-if="open")
         input.custom-control-input(type="checkbox", v-model="visible[k]", :id="`switch-visible${k}`")
-        label.px-1.my-1.custom-control-label.switch-visible5(:for="`switch-visible${k}`" v-if="k==='5'") 台北捷運 MRT
-        label.px-1.my-1.custom-control-label.switch-visible3(:for="`switch-visible${k}`" v-else-if="k==='3'") 台中捷運 MRT
-        label.px-1.my-1.custom-control-label.switch-visible4(:for="`switch-visible${k}`" v-else-if="k==='4'") 台鐵 TRA
+        label.p-1.my-1.custom-control-label.rounded.switch-visible3(:for="`switch-visible${k}`" v-if="k==='3'") 台中捷運 MRT
+        label.p-1.my-1.custom-control-label.rounded.switch-visible4(:for="`switch-visible${k}`" v-else-if="k==='4'") 台中台鐵 TRA
+        label.p-1.my-1.custom-control-label.rounded.switch-visible5(:for="`switch-visible${k}`" v-else-if="k==='5'") 雙北捷運 MRT
+        label.p-1.my-1.custom-control-label.rounded.switch-visible6(:for="`switch-visible${k}`" v-else-if="k==='6'") 雙北台鐵 TRA
         label.px-1.my-1.custom-control-label(:for="`switch-visible${k}`" v-else) YouBike {{ k }}.0
+      .d-flex.border-top.mt-1.pt-1(@click="open = !open"): small.mx-auto {{ open ? '收合' : '展開' }}
     #map
 
 block script
@@ -122,7 +117,8 @@ block script
     const TYPE_CTX = {
       3: { color: '#00beff', imgur: '2jcNp9k' }, // 台中捷運
       4: { color: '#D741F0', imgur: 'hkhwdx9' }, // 台中台鐵
-      5: { color: '#FF474E', imgur: '2jcNp9k' }, // 台北捷運
+      5: { color: '#00beff', imgur: '2jcNp9k' }, // 雙北捷運
+      6: { color: '#D741F0', imgur: 'hkhwdx9' }, // 雙北台鐵
     }
     const verifyStationRealtime = (() => {
       const schema = joi.object({
@@ -216,6 +212,7 @@ block script
         trafficStations: [],
         visible: {},
         ybStations: [],
+        open: true,
         src: {
           youbike: 'https://gcs-youbike2-linebot.taichunmin.idv.tw/latest-data/youbike-station.csv',
           traffic: 'https://gist.githubusercontent.com/yuanchi17/e4642d8d84ff9cd7c76ab89ef768d22a/raw/maps-traffic.csv',
