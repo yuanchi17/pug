@@ -236,8 +236,8 @@ block script
       methods: {
         async initMap () {
           const coord = {
-            lat: _.get(this.station, 'lat', 25.0282849), // 預設中心為 YB 辦公室
-            lng: _.get(this.station, 'lng', 121.5560972),
+            lat: this.param('lat', 25.0282849), // 預設中心為 YB 辦公室
+            lng: this.param('lng', 121.5560972),
             zoom: 15,
           }
           const tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png', {
