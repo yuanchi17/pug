@@ -1,0 +1,275 @@
+extends /layout
+
+block beforehtml
+  -
+    const title = 'PM3 GUI'
+    const description = 'PM3 GUI'
+
+block style
+  meta(name="description" content=description)
+  meta(property="og:description", content=description)
+  style
+    :sass
+      [v-cloak]
+        display: none
+      body 
+        margin-top: 55px
+      #app 
+        max-width: 760px
+
+block content
+  include /navbar
+  #app.content.container.p-3.d-flex.flex-column(v-cloak)
+    h3.text-center.m-0 PM3 GUI
+    button.btn.btn-success.mx-auto.mt-2(type="button", @click="btnReadCard") 讀取識別證
+
+block script
+  include ./includes/helpers.pug
+  script.
+    const serial = _.get(navigator, 'serial')
+    // usbProductId/usbVendorId:  19343 39620
+    const filters = [
+      { usbVendorId: 0x2d2d, usbProductId: 0x504d }, // proxmark.org: Proxmark3
+      { usbVendorId: 0x9ac4, usbProductId: 0x4b8f }, // J. Westhues: ProxMark-3 RFID Instrument (old)
+    ]
+    const PM3_CMD = {
+      ACK: 0x00ff,
+      HF_ISO14443A_READER: 0x0385,
+      HF_MIFARE_READBL: 0x0620,
+      NACK: 0x00fe,
+      UNKNOWN: 0xffff,
+      WTX: 0x0116,
+    }
+    const toUint8Array = str => {
+      return new Uint8Array(_.map(str.match(/.{2}/g), s => _.parseInt(s, 16))) // hex, 16 進位
+    }
+
+    window.sleep = t => new Promise(resolve => { setTimeout(resolve, t) })
+    window.vm = new Vue({
+      el: '#app',
+      data: {
+        h: {},
+        port: null,
+        reader: null,
+        readTmp: {
+          data: [],
+          len: 0,
+        },
+      },
+      async mounted () {
+        // 自動儲存功能
+        try {
+          const saved = JSON.parse(localStorage.getItem(location.pathname))
+          if (saved) this.$set(this, 'h', { ...this.h, ...saved })
+        } catch (err) {}
+        this.$watch('h', () => {
+          localStorage.setItem(location.pathname, JSON.stringify(this.h))
+        }, { deep: true })
+      },
+      methods: {
+        async btnReadCard () {
+          try {
+            this.showLoading('讀取中')
+            if (!this.isSupport()) throw new Error('此瀏覽器不支援 Serial API')
+
+            await this.checkPortOpen()
+
+            if (!this.port.readable) throw new Error('port.readable error')
+            if (!this.reader) this.reader = this.port.readable.getReader()
+            if (!this.reader) throw new Error('Failed to getReader')
+
+            const key = '5A11475E39F5'
+            const name = _.trim(new TextDecoder().decode(await this.cmdHF14AMfRdBl(4, 0, key)))
+            const mpid = _.trim(new TextDecoder().decode(await this.cmdHF14AMfRdBl(5, 0, key)))
+            console.log(`Hi ${name}，你的員工編號是 ${mpid}`)
+            await Swal.fire({ 
+              icon: 'success',
+              title: `Hi ${name}`,
+              text: `你的員工編號是 ${mpid}`,
+            })
+          } catch(err) {
+            console.error(err)
+            await Swal.fire({ icon: 'error', text: err.message })
+          }
+        },
+        isSupport () {
+          return 'serial' in navigator
+        },
+        async checkPortOpen () {
+          this.showLoading('請稍後', '請選擇裝置')
+          if (this.port) {
+            return
+          }
+          this.port = await serial.requestPort({ filters }) // returns a SerialPort
+          await this.port.open({ baudRate: 9600 })
+          console.log('port: ', this.port)
+        },
+        async serialRead () {
+          await this.checkPortOpen()
+          if (!this.reader) {
+            for (let i = 0; i < 100; i++) { // wait 1s for this.port.readable
+              if (this.port.readable) break
+              if (i === 99) throw new Error('SerialPort is not readable')
+              await window.sleep(10)
+            }
+            this.reader = this.port.readable.getReader()
+          }
+          if (!this.reader) throw new Error('Failed to getReader')
+          const { value, done } = await this.reader.read()
+          if (done) {
+            this.reader.releaseLock()
+            this.reader = null
+          }
+          //- console.log('serialRead: ', value)
+          return value
+        },
+        async serialWrite (data) {
+          if (!(data instanceof Uint8Array)) throw new TypeError('data should be Uint8Array')
+          for (let i = 0; i < 100; i++) { // wait 1s for this.port.writable
+            if (this.port.writable) break
+            if (i === 99) throw new Error('SerialPort is not writable')
+            await window.sleep(10)
+          }
+          const writer = this.port.writable.getWriter()
+          if (!writer) throw new Error('Failed to getWriter')
+          //- console.log('serialWrite: ', data)
+          await writer.write(data)
+          writer.releaseLock()
+        },
+        // https://github.com/RfidResearchGroup/proxmark3/blob/8ccda0ea91d924fe456af5170603db3445bc4d59/client/src/comms.c#L736
+        async waitRespTimeout (cmd, timeout = 2e3) {
+          const ctx = { finished: 0, startedAt: Date.now() }
+          try {
+            return await Promise.race([
+              (async () => {
+                while (!ctx.finished) {
+                  const resp = await this.readResp()
+                  if (cmd === PM3_CMD.UNKNOWN || resp.cmd === cmd) return resp 
+                  if (resp.cmd === PM3_CMD.WTX && resp.dvData.byteLength === 2) { // sizeof(uint16_t) => 2
+                    const wtx = resp.dvData.getUint16(0, true)
+                    if (wtx < 0xffff) {
+                      console.log('waiting time extend')
+                      timeout += wtx
+                    }
+                  }
+                }
+              })(),
+              (async () => {
+                if (timeout < 0) return new Promise(resolve => {}) // 不設定 timeout
+                while (!ctx.finished) {
+                  const sleepts = ctx.startedAt + timeout - Date.now()
+                  if (sleepts < 0) throw new Error(`waitRespTimeout ${timeout}ms`)
+                  await window.sleep(sleepts)
+                }
+              })(),
+            ])
+          } finally {
+            ctx.finished = 1
+          }
+        },
+        async packetResponseNG (resp) {
+          // magic 4 + length 2 + status 2 + cmd 2 + data max 512 + crc 2
+          if (resp && !(resp instanceof Uint8Array)) throw new Error('resp 的型態應該要是 Uint8Array')
+          const u8 = resp
+          const dv = new DataView(resp.buffer, resp.byteOffset, resp.byteLength)
+
+          const ng = u8[5] === 0x80 // 用 ng 判斷新舊式
+          const dataOffset = resp.byteOffset + 10 + (ng ? 0 : 24) // new format: 0, old format(uint64_t arg[3]): 3 * arg 8
+          const dataLength = resp.byteLength - dataOffset - 2
+          return {
+            cmd: dv.getUint16(8, true),
+            u8Data: new Uint8Array(resp.buffer, dataOffset, dataLength),
+            dvData: new DataView(resp.buffer, dataOffset, dataLength),
+          }
+        },
+        clearnReadTmp () {
+          this.readTmp = { data: [], len: 0 }
+        },
+        merge (tmp) {
+          const len = tmp.len
+          const merged = new Uint8Array(len)
+          let offset = 0
+          _.each(tmp.data, d => {
+            merged.set(d, offset)
+            offset += d.byteLength
+          })
+          return merged
+        },
+        async serialReadBytes (start, len) { // 因 serial 每次丟的值都不一定，需累計到指定的長度再回傳
+          if (!_.isSafeInteger(len) || len < 1) throw new Error(`參數錯誤 len: ${len}`)
+          const tmp = this.readTmp
+          while (tmp.len < len) {
+            const data = await this.serialRead()
+            tmp.data.push(data)
+            tmp.len += data.byteLength
+          }
+          const merged = this.merge(tmp)
+          return merged.slice(start, len)
+        },
+        // 解讀 serial 回傳的資料 https://github.com/RfidResearchGroup/proxmark3/blob/master/doc/new_frame_format.md#new-format
+        // magic 4 + length 2 + status 2 + cmd 2 + data max 512 + crc 2
+        async readResp () {
+          this.showLoading('請稍後', '正在讀取中')
+          const pre = await this.serialReadBytes(0, 10)
+          const dvPre = new DataView(pre.buffer)
+          const magic = dvPre.getUint32(0) // 為什麼這裡不用 true，因為下面的判斷是用 big endian
+          if (magic === 0x504d3362) { // PM3b
+            const datalen = dvPre.getUint16(4, true) & 0x7fff
+            const resp = new Uint8Array(datalen + 12)
+            resp.set(pre)
+            resp.set(await this.serialReadBytes(10, datalen + 2), 10)
+            return this.packetResponseNG(resp)
+          } else { // PacketResponseOLD
+            // TODO: 
+            await Swal.fire({ icon: 'warning', text: '目前尚未支援讀取舊格式' })
+            console.log('PacketResponseOLD')
+          }
+        },
+        // 組好要給 serial 的資料 https://github.com/RfidResearchGroup/proxmark3/blob/master/doc/new_frame_format.md#new-format
+        // magic 4 + length 2 + cmd 2 + data[length] + crc 2
+        async senCommandNG ({ cmd, u8Data = null, ng = true }) {
+          if (u8Data && !(u8Data instanceof Uint8Array)) throw new Error('u8Data 的型態應該要是 Uint8Array')
+
+          // length of the variable payload, 0 if none, max 512 (PM3_CMD_DATA_SIZE) for now.
+          const u8DataLength = u8Data?.byteLength ?? 0
+          if (u8DataLength > 512) throw new Error('u8DataLength > 512')
+
+          const tx = new Uint8Array(u8DataLength + 10) // 寫入的資料 magic 4 + length 2 + cmd 2 + data[length] + crc 2
+          const dvTx = new DataView(tx.buffer)
+          const magic = new TextEncoder().encode('PM3a')
+          const crc = new TextEncoder().encode('a3')
+          tx.set(magic, 0)
+          dvTx.setUint16(4, u8DataLength + (ng ? 0x8000 : 0), true) // littleEndian 要加 true
+          dvTx.setUint16(6, Number(BigInt.asUintN(16, BigInt(cmd))), true)
+          if (u8DataLength) tx.set(u8Data, 8)
+          tx.set(crc, u8DataLength + 8) // =dvTx.setUint16(dataLen + 8, 0x3361, true)
+          await this.serialWrite(tx)
+        },
+        // https://github.com/RfidResearchGroup/proxmark3/blob/30aa7aa7d1694ac9272cefdfb838931e1b46d990/client/src/mifare/mifarehost.c#L805
+        async cmdHF14AMfRdBl (blockNo, keyType, key) {
+          key = toUint8Array(key) // 原始碼的參數是 uint8_t，但我們丟的是 hex 的 string，所以要先轉換
+          // 建立兩種比較好指定
+          const u8Data = new Uint8Array(8)
+          const dvData = new DataView(u8Data.buffer)
+          dvData.setUint8(0, blockNo) // 將 blockNo 指定在 0 的位置
+          dvData.setUint8(1, keyType) // 將 keyType 指定在 1 的位置
+          u8Data.set(key, 2) // 將 key(uint8Array) 從 2 的位置開始指定
+
+          await this.senCommandNG({ cmd: PM3_CMD.HF_MIFARE_READBL, u8Data })
+          const resp = await this.waitRespTimeout(PM3_CMD.HF_MIFARE_READBL)
+          if (!_.get(resp, 'dvData')) throw new Error(`讀取 Block 失敗 QQ`)
+          console.log('resp: ', resp)
+          this.clearnReadTmp() // 清除讀取紀錄
+          return resp.dvData
+        },
+        showLoading (title, text) {
+          Swal.fire({
+            title,
+            text,
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            willOpen: () => { Swal.showLoading() },
+          })
+        },
+      },
+    })
