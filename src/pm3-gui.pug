@@ -43,6 +43,19 @@ block script
     const toUint8Array = str => {
       return new Uint8Array(_.map(str.match(/.{2}/g), s => _.parseInt(s, 16))) // hex, 16 進位
     }
+    const isSupport = () => {
+      return 'serial' in navigator
+    }
+    const merge = readTmp => {
+      const len = readTmp.len
+      const merged = new Uint8Array(len)
+      let offset = 0
+      _.each(readTmp.data, d => {
+        merged.set(d, offset)
+        offset += d.byteLength
+      })
+      return merged
+    }
 
     window.sleep = t => new Promise(resolve => { setTimeout(resolve, t) })
     window.vm = new Vue({
@@ -68,19 +81,16 @@ block script
       },
       methods: {
         async btnReadCard () {
+          const toDecoder = dvData => _.trim(new TextDecoder().decode(dvData), '\x00')
           try {
             this.showLoading('請稍後', '正在讀取中')
-            if (!this.isSupport()) throw new Error('此瀏覽器不支援 Serial API')
+            if (!isSupport()) throw new Error('此瀏覽器不支援 Serial API')
 
             await this.checkPortOpen()
 
-            if (!this.port.readable) throw new Error('port.readable error')
-            if (!this.reader) this.reader = this.port.readable.getReader()
-            if (!this.reader) throw new Error('Failed to getReader')
-
             const key = '5A11475E39F5'
-            const name = _.trim(new TextDecoder().decode(await this.cmdHF14AMfRdBl(4, 0, key)))
-            const mpid = _.trim(new TextDecoder().decode(await this.cmdHF14AMfRdBl(5, 0, key)))
+            const name = toDecoder(await this.cmdHF14AMfRdBl(4, 0, key))
+            const mpid = toDecoder(await this.cmdHF14AMfRdBl(5, 0, key))
             console.log(`Hi ${name}，你的員工編號是 ${mpid}`)
             await Swal.fire({ 
               icon: 'success',
@@ -91,9 +101,6 @@ block script
             console.error(err)
             await Swal.fire({ icon: 'error', text: err.message })
           }
-        },
-        isSupport () {
-          return 'serial' in navigator
         },
         async checkPortOpen () {
           if (this.port) {
@@ -133,6 +140,7 @@ block script
           if (!writer) throw new Error('Failed to getWriter')
           //- console.log('serialWrite: ', data)
           await writer.write(data)
+          console.log('serialWrite Done:', data)
           writer.releaseLock()
         },
         // https://github.com/RfidResearchGroup/proxmark3/blob/8ccda0ea91d924fe456af5170603db3445bc4d59/client/src/comms.c#L736
@@ -143,8 +151,10 @@ block script
               (async () => {
                 while (!ctx.finished) {
                   const resp = await this.readResp()
+                  console.log('readResp Done:', resp)
                   if (cmd === PM3_CMD.UNKNOWN || resp.cmd === cmd) return resp 
-                  if (resp.cmd === PM3_CMD.WTX && resp.dvData.byteLength === 2) { // sizeof(uint16_t) => 2
+                  //- TODO: cmd 256 狂噴錯，timeout 無用
+                  if (resp.cmd === PM3_CMD.WTX && resp.dvData.byteLength === 2) { // sizeof(uint16_t) => 2 
                     const wtx = resp.dvData.getUint16(0, true)
                     if (wtx < 0xffff) {
                       console.log('waiting time extend')
@@ -155,6 +165,7 @@ block script
               })(),
               (async () => {
                 if (timeout < 0) return new Promise(resolve => {}) // 不設定 timeout
+                console.log('ctx', ctx)
                 while (!ctx.finished) {
                   const sleepts = ctx.startedAt + timeout - Date.now()
                   if (sleepts < 0) throw new Error(`waitRespTimeout ${timeout}ms`)
@@ -184,16 +195,6 @@ block script
         clearnReadTmp () {
           this.readTmp = { data: [], len: 0 }
         },
-        merge (tmp) {
-          const len = tmp.len
-          const merged = new Uint8Array(len)
-          let offset = 0
-          _.each(tmp.data, d => {
-            merged.set(d, offset)
-            offset += d.byteLength
-          })
-          return merged
-        },
         async serialReadBytes (start, len) { // 因 serial 每次丟的值都不一定，需累計到指定的長度再回傳
           if (!_.isSafeInteger(len) || len < 1) throw new Error(`參數錯誤 len: ${len}`)
           const tmp = this.readTmp
@@ -202,8 +203,7 @@ block script
             tmp.data.push(data)
             tmp.len += data.byteLength
           }
-          const merged = this.merge(tmp)
-          return merged.slice(start, len)
+          return merge(tmp).slice(start, len)
         },
         // 解讀 serial 回傳的資料 https://github.com/RfidResearchGroup/proxmark3/blob/master/doc/new_frame_format.md#new-format
         // magic 4 + length 2 + status 2 + cmd 2 + data max 512 + crc 2
