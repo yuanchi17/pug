@@ -69,7 +69,7 @@ block script
       methods: {
         async btnReadCard () {
           try {
-            this.showLoading('讀取中')
+            this.showLoading('請稍後', '正在讀取中')
             if (!this.isSupport()) throw new Error('此瀏覽器不支援 Serial API')
 
             await this.checkPortOpen()
@@ -96,7 +96,6 @@ block script
           return 'serial' in navigator
         },
         async checkPortOpen () {
-          this.showLoading('請稍後', '請選擇裝置')
           if (this.port) {
             return
           }
@@ -209,7 +208,6 @@ block script
         // 解讀 serial 回傳的資料 https://github.com/RfidResearchGroup/proxmark3/blob/master/doc/new_frame_format.md#new-format
         // magic 4 + length 2 + status 2 + cmd 2 + data max 512 + crc 2
         async readResp () {
-          this.showLoading('請稍後', '正在讀取中')
           const pre = await this.serialReadBytes(0, 10)
           const dvPre = new DataView(pre.buffer)
           const magic = dvPre.getUint32(0) // 為什麼這裡不用 true，因為下面的判斷是用 big endian
