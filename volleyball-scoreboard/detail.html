@@ -1,0 +1,496 @@
+<!DOCTYPE html><html><head><title>排球記分板</title><link rel="icon" href="https://i.imgur.com/uvL7e25.png" type="image/x-icon"><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no"><script>(function () {
+  const host = location.host.split(':')[0]
+  if (host === 'localhost') document.write(`<script src="http://${host}:35729/livereload.js?snipver=1"></` + 'script>')
+})()</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4/css/font-awesome.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"></head><body><meta name="description" content="排球記分板詳細版"><meta property="og:description" content="排球記分板詳細版"><style>[v-cloak] {
+  display: none;
+}
+
+#app {
+  margin-top: 57px;
+}
+#app #score-line {
+  position: relative;
+  height: 30px;
+}
+#app #score-line .line-win {
+  width: 1.5px;
+  height: 30px;
+  background-color: red;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+#app #score-line .progress {
+  top: -30px;
+  position: relative;
+  height: 30px;
+}
+#app .player-btn {
+  width: 22%;
+}
+#app .player-record {
+  border: none;
+}</style><style>@charset "UTF-8";
+body {
+  font-family: "Source Sans Pro", Helvetica, Arial, "PingFang TC", "Microsoft JhengHei", "微軟正黑體", sans-serif;
+  letter-spacing: 0.5px;
+}</style><script async src="https://www.googletagmanager.com/gtag/js?id=UA-164526128-1"></script><script>function gtag () { window.dataLayer.push(arguments) }
+const host = location.host.split(':')[0]
+if (host !== 'localhost') {
+  window.dataLayer = window.dataLayer || []
+  window.GA_MEASUREMENT_ID = 'UA-164526128-1'
+  gtag('js', new Date())
+
+  gtag('config', 'UA-164526128-1')
+}</script><div class="navbar navbar-expand-md navbar-light fixed-top"><a class="navbar-brand mx-auto" href="https://yuanchi17.github.io/index.html">YUAN</a></div><style>.navbar {
+  border-bottom: solid 1px #e6e6e6;
+  width: 100%;
+  background-color: #ffffff;
+}
+
+a {
+  color: #333333;
+  font-weight: bold;
+}</style><div class="container pt-3" id="app" v-cloak><h3 class="text-center" @click="btnChangeName">{{ h.home.name }}　VS　{{ h.guest.name }}</h3><h3 class="text-center">{{ h.home.win }}：{{ h.guest.win }}</h3><button class="btn btn-outline-info btn-lg d-flex mx-auto" @click="showScoreBoard = !showScoreBoard">{{ getScore.home }}：{{ getScore.guest }}</button><div class="my-3" id="score-line"><div class="line-win"></div><div class="progress"><div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" :style="getWidthHome">{{ getScore.home }}</div><div class="progress-bar progress-bar-striped progress-bar-animated bg-warning ml-auto" role="progressbar" :style="getWidthGuest">{{ getScore.guest }}</div></div></div><div class="d-flex justify-content-center mb-3" id="button-group-game" v-if="!gameOver"><button class="btn btn-outline-danger mr-2" v-if="!h.scoreRecords.length" @click="h.gameScore -= 1">減少比分（{{ h.gameScore }}）</button><button class="btn btn-outline-danger mr-2" v-else @click="btnSubScore()">回上一分</button><button class="btn btn-outline-danger" @click="btnRePlay">重新計分</button><button class="btn btn-outline-success ml-2" @click="btnShowStoryRecord()">總紀錄</button></div><div class="d-flex justify-content-around mb-3" id="button-group-gameover" v-else><button class="btn btn-outline-primary" @click="btnRePlay">再比一局</button><button class="btn btn-outline-success" @click="btnShowStoryRecord()">總紀錄</button><button class="btn btn-outline-danger" @click="btnNextTeam()">下一隊</button></div><table class="table table-bordered table-responsive" v-if="showScoreBoard"><tbody><tr v-for="team in ['home', 'guest']" :key="team"><th class="text-nowrap" scopr="row">{{ team === 'home' ? h.home.name : h.guest.name }}</th><td v-for="(score, index) in getScoreBoard" :key="index">{{ score[team] }}</td></tr></tbody></table><div id="record"><div class="row"><div class="col" v-if="!gameOver || (h.home.showRecord &amp;&amp; h.home.players.length)"><div class="card mb-3"><div class="card-body" v-if="!gameOver"><div class="d-flex justify-content-center"><h5 class="card-title text-center m-0 mr-2 d-flex flex-column justify-content-center">{{ h.home.name }}</h5><button class="btn btn-outline-primary mr-2" @click="h.home.showRecord = !h.home.showRecord">{{ h.home.showRecord ? '隱藏紀錄' : '查看紀錄' }}</button><button class="btn btn-outline-primary" @click="editPlayerHome = !editPlayerHome">球員</button></div><div class="d-flex justify-content-center mt-3" v-if="editPlayerHome"><input class="form-control" type="text" placeholder="請輸入球員號碼" v-model="h.home.editPlayer"><button class="btn btn-outline-primary mx-2" type="submit" @click="btnUpdatePlayer('home', 'add')">+</button><button class="btn btn-outline-danger" type="submit" @click="btnUpdatePlayer('home', 'delete')">-</button></div><hr><div class="mb-2" id="players"><button class="btn btn-link" @click="recordPlayer = player" v-for="player in h.home.players" :key="player">{{ player }}</button></div><div class="d-flex justify-content-around mb-2"><button class="btn player-btn btn-primary" @click="btnUpdateScore('home', 'attacks', type)" v-for="type in record.attacks" :key="type">{{ type }}</button></div><div class="d-flex justify-content-around"><button class="btn btn-secondary player-btn" @click="btnUpdateScore('home', 'faults', type)" v-for="type in record.faults" :key="type">{{ type }}</button></div></div><table class="table table-bordered table-responsive m-0 player-record" v-if="h.home.showRecord &amp;&amp; h.home.players.length"><thead><tr><th class="text-nowrap" scope="col">{{ h.home.name }}球員紀錄</th><th class="text-nowrap text-center" scope="col" v-for="player in h.home.players" :key="player">{{ player }}</th></tr></thead><tbody><tr v-for="(type, index) in ['發球', '攻擊', '攔網/接噴', '其他']" :key="type"><th scopr="row">{{ type }}</th><td class="text-nowrap text-center" scope="col" v-for="player in h.home.players" :key="player">{{ _.get(getPlayersRecords.home[player], type, [0,0]).join(' / ') }}</td></tr></tbody></table></div></div><div class="col" v-if="!gameOver || (h.guest.showRecord &amp;&amp; h.guest.players.length)"><div class="card mb-3"><div class="card-body" v-if="!gameOver"><div class="d-flex justify-content-center"><h5 class="card-title text-center m-0 mr-2 d-flex flex-column justify-content-center">{{ h.guest.name }}</h5><button class="btn btn-outline-primary mr-2" @click="h.guest.showRecord = !h.guest.showRecord">{{ h.guest.showRecord ? '隱藏紀錄' : '查看紀錄' }}</button><button class="btn btn-outline-primary" @click="editPlayerGuest = !editPlayerGuest">球員</button></div><div class="d-flex justify-content-center mt-3" v-if="editPlayerGuest"><input class="form-control" type="text" placeholder="請輸入球員號碼" v-model="h.guest.editPlayer"><button class="btn btn-outline-primary mx-2" type="submit" @click="btnUpdatePlayer('guest', 'add')">+</button><button class="btn btn-outline-danger" type="submit" @click="btnUpdatePlayer('guest', 'delete')">-</button></div><hr><div class="mb-2" id="players"><button class="btn btn-link" @click="recordPlayer = player" v-for="player in h.guest.players" :key="player">{{ player }}</button></div><div class="d-flex justify-content-around mb-2"><button class="btn player-btn btn-warning" @click="btnUpdateScore('guest', 'attacks', type)" v-for="type in record.attacks" :key="type">{{ type }}</button></div><div class="d-flex justify-content-around"><button class="btn btn-secondary player-btn" @click="btnUpdateScore('guest', 'faults', type)" v-for="type in record.faults" :key="type">{{ type }}</button></div></div><table class="table table-bordered table-responsive m-0 player-record" v-if="h.guest.showRecord &amp;&amp; h.guest.players.length"><thead><tr><th class="text-nowrap" scope="col">{{ h.guest.name }}球員紀錄</th><th class="text-nowrap text-center" scope="col" v-for="player in h.guest.players" :key="player">{{ player }}</th></tr></thead><tbody><tr v-for="(type, index) in ['發球', '攻擊', '攔網/接噴', '其他']" :key="type"><th scopr="row">{{ type }}</th><td class="text-nowrap text-center" scope="col" v-for="player in h.guest.players" :key="player">{{ _.get(getPlayersRecords.guest[player], type, [0,0]).join(' / ') }}</td></tr></tbody></table></div></div></div></div></div><script src="https://cdn.jsdelivr.net/npm/axios@0.20.0/dist/axios.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lodash@4/lodash.min.js"></script><script src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js"></script><script src="https://cdn.jsdelivr.net/npm/popper.js@1/dist/umd/popper.min.js"></script><script src="https://cdn.jsdelivr.net/npm/qs@6/dist/qs.min.js"></script><script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.all.min.js"></script><script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.min.js"></script><script src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js"></script><script>const GAME_SCORE = 25 // 比賽分數
+window.vm = new Vue({
+  el: '#app',
+  data: {
+    editPlayerHome: false,
+    editPlayerGuest: false,
+    recordPlayer: null, // 選定的球員
+    record: {
+      attacks: ['發球', '攻擊', '攔網', '其他'],
+      faults: ['發球', '攻擊', '接噴', '其他'],
+    },
+    scoreBoard: [], // 分數板
+    showScoreBoard: true,
+    h: {
+      gameScore: 25,
+      guest: {
+        editPlayer: '',
+        name: '敵方',
+        players: ['team'],
+        showRecord: false,
+        win: 0,
+      },
+      home: {
+        editPlayer: '',
+        name: '我方',
+        players: ['team'],
+        showRecord: false,
+        win: 0,
+      },
+      gradeAll: { attacks: {}, faults: {} },
+      scoreRecords: [],
+      //- scoreRecords: [
+      //-   {
+      //-     updateTeam: 'home', // 最後得分隊伍
+      //-     recordTeam: 'guest', // 得失分隊伍
+      //-     player: 17, // 哪個球員的得失分
+      //-     recordType: 'faults', // 得分, 失分
+      //-     type: '發球', // 類型
+      //-   },
+      //- ],
+    },
+  },
+  async mounted () {
+    // 自動儲存功能
+    try {
+      const saved = JSON.parse(localStorage.getItem(location.pathname))
+      if (saved) this.$set(this, 'h', { ...this.h, ...saved })
+    } catch (err) {}
+    this.$watch('h', () => {
+      localStorage.setItem(location.pathname, JSON.stringify(this.h))
+    }, { deep: true })
+
+    this.useAlert()
+  },
+  computed: {
+    getScore () {
+      const score = _.groupBy(this.h.scoreRecords, 'updateTeam')
+      return {
+        home: _.get(score, 'home', []).length,
+        guest: _.get(score, 'guest', []).length,
+      }
+    },
+    getWidthHome () {
+      return { width: _.toString((this.getScore.home / this.h.gameScore) * 50) + '%' }
+    },
+    getWidthGuest () {
+      return { width: _.toString((this.getScore.guest / this.h.gameScore) * 50) + '%' }
+    },
+    getPlayersRecords () {
+      const tmp = { home: {}, guest: {} }
+      const records = _.groupBy(this.h.scoreRecords, 'recordTeam')
+      for (const team of ['home', 'guest']) {
+        const playerDatas = _.groupBy(records[team], 'player')
+        _.each(playerDatas, (datas, p) => {
+          tmp[team][p] = _.get(tmp[team], p, {
+            發球: [0, 0],
+            攻擊: [0, 0],
+            '攔網/接噴': [0, 0],
+            其他: [0, 0],
+          })
+
+          const playerRecord = tmp[team][p]
+          for (const data of datas) {
+            const oldRecord = playerRecord[data.type]
+            playerRecord[data.type] = [
+              data.recordType === 'attacks' ? oldRecord[0] += 1 : oldRecord[0],
+              data.recordType === 'faults' ? oldRecord[1] += 1 : oldRecord[1],
+            ]
+          }
+        })
+      }
+      return tmp
+    },
+    getScoreBoard () {
+      const tmp = { home: 0, guest: 0 }
+      this.$set(this, 'scoreBoard', _.map(this.h.scoreRecords, record => {
+        const records = (record.updateTeam === 'home'
+          ? {
+              home: tmp.home += 1,
+              guest: '',
+            }
+          : {
+              home: '',
+              guest: tmp.guest += 1,
+            })
+        return records
+      }))
+      return this.scoreBoard
+    },
+    gameOver () {
+      const data = this.h
+      const sHome = this.getScore.home
+      const sGuest = this.getScore.guest
+      const la = (sHome === this.h.gameScore || sGuest === this.h.gameScore)
+      const duce = (la && Math.abs(sHome - sGuest) === 1)
+      const over = (la && Math.abs(sHome - sGuest) !== 1) // true: 比賽結束
+
+      if (duce) this.h.gameScore += 1
+      if (over) {
+        (sHome > sGuest) ? data.home.win += 1 : data.guest.win += 1
+        this.grades()
+        data.home.showRecord = true
+        data.home.showRecord = true
+      }
+      return over
+    },
+  },
+  methods: {
+    init () {
+      this.$set(this, 'h', {
+        gameScore: GAME_SCORE,
+        guest: {
+          editPlayer: '',
+          name: '敵方',
+          players: ['team'],
+          showRecord: false,
+          win: 0,
+        },
+        home: {
+          editPlayer: '',
+          name: '我方',
+          players: ['team'],
+          showRecord: false,
+          win: 0,
+        },
+        gradeAll: { attacks: {}, faults: {} },
+        scoreRecords: [],
+      })
+    },
+    btnRePlay () {
+      this.$set(this, 'h', {
+        gameScore: GAME_SCORE,
+        guest: {
+          editPlayer: '',
+          name: _.get(this.h.guest, 'name', '敵方'),
+          players: _.get(this.h.guest, 'players', ['team']),
+          showRecord: false,
+          win: 0,
+        },
+        home: {
+          editPlayer: '',
+          name: _.get(this.h.home, 'name', '我方'),
+          players: _.get(this.h.home, 'players', ['team']),
+          showRecord: false,
+          win: 0,
+        },
+        scoreRecords: [],
+        gradeAll: _.get(this.h, 'gradeAll'),
+      })
+    },
+    async btnNextTeam (next = true) {
+      const result = await this.nextTeamAlert({
+        buttonText: next ? '下一隊' : '清除',
+        text: next ? '選擇「下一隊」，之前的總紀錄都會消失！你可以先至「總紀錄」截圖保存，再繼續下一隊的比賽。' : '清除紀錄後將無法挽回！',
+      })
+      if (!result.isConfirmed) return await this.btnShowStoryRecord()
+
+      this.init()
+    },
+    btnUpdateScore (team, recordType, type) { // 得失分
+      type = (type === '攔網' || type === '接噴') ? '攔網/接噴' : type
+      this.updateScoreRecords(team, recordType, type)
+    },
+    updateScoreRecords (team, recordType, type) {
+      this.$set(this.h, 'scoreRecords', [
+        ...this.h.scoreRecords,
+        {
+          player: this.recordPlayer || 'team',
+          recordType,
+          recordTeam: team,
+          type,
+          updateTeam: recordType === 'attacks' ? team : _.xor(['home', 'guest'], [team])[0],
+        },
+      ])
+      this.recordPlayer = null
+    },
+    btnSubScore () { // 扣分，回上一步
+      this.h.scoreRecords.pop()
+    },
+    async btnChangeName () {
+      const hName = this.h.home.name
+      const gName = this.h.guest.name
+      const { value: newHomeName } = await Swal.fire({
+        cancelButtonText: '取消',
+        confirmButtonText: '確定',
+        input: 'text',
+        inputValue: hName,
+        showCancelButton: true,
+        title: '更改我方隊名',
+      })
+      const { value: newGuestName } = await Swal.fire({
+        cancelButtonText: '取消',
+        confirmButtonText: '確定',
+        input: 'text',
+        inputValue: gName,
+        showCancelButton: true,
+        title: '更改敵方隊名',
+      })
+      this.$set(this.h.home, 'name', newHomeName || hName)
+      this.$set(this.h.guest, 'name', newGuestName || gName)
+    },
+    grades () {
+      const tmp = {
+        home: { 發球: 0, 攻擊: 0, '攔網/接噴': 0, 其他: 0, 失誤: 0 },
+        guest: { 發球: 0, 攻擊: 0, '攔網/接噴': 0, 其他: 0, 失誤: 0 },
+      }
+      const faultsTmp = { // 為了存總紀錄
+        home: { 發球: 0, 攻擊: 0, '攔網/接噴': 0, 其他: 0 },
+        guest: { 發球: 0, 攻擊: 0, '攔網/接噴': 0, 其他: 0 },
+      }
+      const records = _.groupBy(this.h.scoreRecords, 'recordTeam')
+      for (const [team, datas] of _.toPairs(records)) {
+        _.each(datas, data => {
+          if (data.recordType === 'attacks') tmp[team][data.type] += 1
+          else {
+            tmp[team]['失誤'] += 1
+            faultsTmp[team][data.type] += 1
+          }
+        })
+      }
+
+      // 儲存每次的紀錄
+      const gradeAll = this.h.gradeAll
+      _.each(tmp, (types, team) => {
+        _.each(types, (v, type) => {
+          if (!_.get(gradeAll.attacks, `${team}.${type}`)) _.set(gradeAll.attacks, [team, type], [])
+          gradeAll.attacks[team][type].push(v)
+        })
+        if (!_.get(gradeAll.attacks.team, '總得分')) _.set(gradeAll.attacks, [team, '總得分'], [])
+        gradeAll.attacks[team]['總得分'].push(this.getScore[team])
+      })
+
+      _.each(faultsTmp, (types, team) => {
+        _.each(types, (v, type) => {
+          if (!_.get(gradeAll.faults, `${team}.${type}`)) _.set(gradeAll.faults, [team, type], [])
+          gradeAll.faults[team][type].push(v)
+        })
+      })
+
+      Swal.fire({
+        html: `<div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">${this.h.home.name}</th>
+                <th scope="col"></th>
+                <th scope="col">${this.h.guest.name}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${this.getScore.home}</td>
+                <th scope="row">得分</th>
+                <td>${this.getScore.guest}</td>
+              </tr>
+              <tr>
+                <td>${tmp.home['發球']}</td>
+                  <th scope="row">發球得分</th>
+                <td>${tmp.guest['發球']}</td>
+              </tr>
+              <tr>
+                <td>${tmp.home['攻擊']}</td>
+                <th scope="row">攻擊得分</th>
+                <td>${tmp.guest['攻擊']}</td>
+              </tr>
+              <tr>
+                <td>${tmp.home['攔網/接噴']}</td>
+                <th scope="row">攔網得分</th>
+                <td>${tmp.guest['攔網/接噴']}</td>
+              </tr>
+              <tr>
+                <td>${tmp.home['其他']}</td>
+                <th scope="row">其他得分</th>
+                <td>${tmp.guest['其他']}</td>
+              </tr>
+              <tr>
+                <td>${tmp.guest['失誤']}</td>
+                <th scope="row">對方失誤</th>
+                <td>${tmp.home['失誤']}</td>
+              </tr>
+              </tbody></table></div>`,
+      })
+    },
+    async btnUpdatePlayer (team, action) {
+      team = team === 'home' ? this.h.home : this.h.guest
+      if (!team.editPlayer) {
+        await this.alert('錯誤', '請輸入球員號碼')
+        return
+      }
+      if (action === 'add') this.addPlayer(team)
+      else this.deletePlayer(team)
+    },
+    async addPlayer (team) {
+      const pIndex = _.indexOf(team.players, team.editPlayer)
+      if (pIndex !== -1) this.alert('錯誤', `已存在球員「${team.editPlayer}」`)
+      else team.players.push(team.editPlayer)
+    },
+    async deletePlayer (team) {
+      const pIndex = _.indexOf(team.players, team.editPlayer)
+      if (pIndex === -1) this.alert('錯誤', `不存在球員「${team.editPlayer}」`)
+      else {
+        const result = await Swal.fire({
+          title: '注意',
+          showCancelButton: true,
+          cancelButtonText: '取消',
+          confirmButtonText: '移除',
+          text: '移除此球員，並不會清除任何與此球員相關的得失分紀錄',
+        })
+        if (result.isConfirmed) team.players.splice(pIndex, 1)
+      }
+    },
+    async alert (title, text) {
+      await Swal.fire({ title, text })
+    },
+    async nextTeamAlert ({ buttonText, text }) {
+      return await Swal.fire({
+        title: '注意',
+        showCancelButton: true,
+        cancelButtonText: '先去截圖',
+        confirmButtonText: buttonText,
+        text,
+      })
+    },
+    async useAlert () {
+      Swal.fire({
+        title: '使用說明',
+        html: '<div class="text-left"><li>更換隊名：請點擊上方「我方 VS 敵方」</li><li>調整隊員：請點擊「隊員」進行新增、移除</li><li>藍色按鈕為「我方得分」</li><li>黃色按鈕為「敵方得分」</li><li>灰色按鈕為「失分」</li><li>計分：請先選擇得失分隊員，再選得失分按鈕；若無選擇，則計入團隊得失分</li></div>',
+      })
+    },
+    async btnShowStoryRecord () {
+      const gradeAll = this.h.gradeAll
+      if (_.isEmpty(gradeAll.attacks)) {
+        await Swal.fire({ title: '總紀錄', text: '暫無紀錄' })
+        return
+      }
+
+      const hName = this.h.home.name
+      const gName = this.h.guest.name
+      const hAttacks = gradeAll.attacks.home
+      const gAttacks = gradeAll.attacks.guest
+      const hFaults = gradeAll.faults.home
+      const gFaults = gradeAll.faults.guest
+      const result = await Swal.fire({
+        showCancelButton: true,
+        cancelButtonText: '返回',
+        confirmButtonText: '清除紀錄',
+        html: `<div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">${hName}</th>
+                <th scope="col"></th>
+                <th scope="col">${gName}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${hAttacks['總得分'].join(' / ')}</td>
+                <th scope="row">總得分</th>
+                <td>${gAttacks['總得分'].join(' / ')}</td>
+              </tr>
+              <tr>
+                <td>${hAttacks['發球'].join(' / ')}</td>
+                  <th scope="row">發球</th>
+                <td>${gAttacks['發球'].join(' / ')}</td>
+              </tr>
+              <tr>
+                <td>${hAttacks['攻擊'].join(' / ')}</td>
+                <th scope="row">攻擊</th>
+                <td>${gAttacks['攻擊'].join(' / ')}</td>
+              </tr>
+              <tr>
+                <td>${hAttacks['攔網/接噴'].join(' / ')}</td>
+                <th scope="row">攔網</th>
+                <td>${gAttacks['攔網/接噴'].join(' / ')}</td>
+              </tr>
+              <tr>
+                <td>${hAttacks['其他'].join(' / ')}</td>
+                <th scope="row">其他</th>
+                <td>${gAttacks['其他'].join(' / ')}</td>
+              </tr>
+              <tr>
+                <td>${gAttacks['失誤'].join(' / ')}</td>
+                <th scope="row">對方失誤</th>
+                <td>${hAttacks['失誤'].join(' / ')}</td>
+              </tr>
+              </tbody></table>
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">${hName}</th>
+                <th scope="col">失誤</th>
+                <th scope="col">${gName}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${hFaults['發球'].join(' / ')}</td>
+                  <th scope="row">發球</th>
+                <td>${gFaults['發球'].join(' / ')}</td>
+              </tr>
+              <tr>
+                <td>${hFaults['攻擊'].join(' / ')}</td>
+                <th scope="row">攻擊</th>
+                <td>${gFaults['攻擊'].join(' / ')}</td>
+              </tr>
+              <tr>
+                <td>${hFaults['攔網/接噴'].join(' / ')}</td>
+                <th scope="row">接噴</th>
+                <td>${gFaults['攔網/接噴'].join(' / ')}</td>
+              </tr>
+              <tr>
+                <td>${hFaults['其他'].join(' / ')}</td>
+                <th scope="row">其他</th>
+                <td>${gFaults['其他'].join(' / ')}</td>
+              </tr>
+              </tbody></table></div>`,
+      })
+      if (result.isConfirmed) this.btnNextTeam(false)
+    },
+  },
+})</script></body></html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html><html><head><title>減碳決心傳下去</title><link rel="icon" href="https://i.imgur.com/uvL7e25.png" type="image/x-icon"><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no"><script>(function () {
+  const host = location.host.split(':')[0]
+  if (host === 'localhost') document.write(`<script src="http://${host}:35729/livereload.js?snipver=1"></` + 'script>')
+})()</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4/css/font-awesome.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"></head><body><meta name="description" content="減碳決心傳下去"><meta property="og:description" content="減碳決心傳下去"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css"><style>html, body {
+  height: 100%;
+  width: 100vw;
+}
+
+body {
+  background-color: #fff7dd;
+  background-image: linear-gradient(to bottom, #ffffff 0%, #fff7dd 50%, #fff0c3 100%);
+  background-attachment: fixed;
+}
+
+.img-loading {
+  display: block;
+  margin: 0 auto;
+  width: 192px;
+  height: 192px;
+}</style><style>@charset "UTF-8";
+body {
+  font-family: "Source Sans Pro", Helvetica, Arial, "PingFang TC", "Microsoft JhengHei", "微軟正黑體", sans-serif;
+  letter-spacing: 0.5px;
+}</style><script async src="https://www.googletagmanager.com/gtag/js?id=UA-164526128-1"></script><script>function gtag () { window.dataLayer.push(arguments) }
+const host = location.host.split(':')[0]
+if (host !== 'localhost') {
+  window.dataLayer = window.dataLayer || []
+  window.GA_MEASUREMENT_ID = 'UA-164526128-1'
+  gtag('js', new Date())
+
+  gtag('config', 'UA-164526128-1')
+}</script><div class="container my-3" id="app"><img class="img-loading" src="https://storage.googleapis.com/youbike-chatbot-photo/theme-golden-age/icons/redirect-loading.png"><h3 class="text-center my-3">3 秒後自動跳轉</h3></div><script src="https://cdn.jsdelivr.net/npm/axios@0.20.0/dist/axios.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lodash@4/lodash.min.js"></script><script src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js"></script><script src="https://cdn.jsdelivr.net/npm/popper.js@1/dist/umd/popper.min.js"></script><script src="https://cdn.jsdelivr.net/npm/qs@6/dist/qs.min.js"></script><script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.all.min.js"></script><script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.min.js"></script><script src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js"></script><script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script><script async src="https://www.googletagmanager.com/gtag/js?id=UA-39556213-5"></script><script>// gtag
+window.dataLayer = window.dataLayer || []
+function gtag () { window.dataLayer.push(arguments) }
+gtag('js', new Date())
+window.gtagSetLineId = lineId => {
+  gtag('config', 'UA-39556213-5', {
+    app_name: '',
+    send_page_view: false,
+    transport_type: 'beacon',
+    user_id: lineId,
+  })
+}
+
+const loginPromise = (async () => {
+  await liff.init({ liffId: '1653630254-RDAMb0PZ' })
+  if (!liff.isLoggedIn()) {
+    liff.login({ redirectUri: location.href })
+    return await new Promise(resolve => {}) // 永遠不會結束的 Promise
+  }
+  const profile = await liff.getProfile()
+  if (!profile.userId) throw new Error('無法取得 userId')
+  if (window.gtagSetLineId) window.gtagSetLineId(profile.userId)
+  return profile
+})()
+window.sleep = t => new Promise(resolve => { setTimeout(resolve, t) })
+
+const redirect = async () => {
+  await loginPromise
+  gtag('event', 'screen_view', { screen_name: '跳轉YB官方帳號' })
+  liff.openWindow({ url: 'https://line.me/R/ti/p/@youbike' })
+  await window.sleep(1000)
+  liff.closeWindow()
+}
+redirect()</script></body></html>

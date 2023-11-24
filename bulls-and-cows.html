@@ -1,0 +1,129 @@
+<!DOCTYPE html><html><head><title>1A2B 解題工具</title><link rel="icon" href="https://i.imgur.com/uvL7e25.png" type="image/x-icon"><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no"><script>(function () {
+  const host = location.host.split(':')[0]
+  if (host === 'localhost') document.write(`<script src="http://${host}:35729/livereload.js?snipver=1"></` + 'script>')
+})()</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4/css/font-awesome.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"></head><body><meta name="description" content="快來成為 1A2B 解題達人吧！"><meta property="og:description" content="快來成為 1A2B 解題達人吧！"><style>[v-cloak] {
+  display: none;
+}
+
+body {
+  margin-top: 55px;
+}
+
+#app .card {
+  max-width: 500px;
+  width: 80vw;
+}</style><style>@charset "UTF-8";
+body {
+  font-family: "Source Sans Pro", Helvetica, Arial, "PingFang TC", "Microsoft JhengHei", "微軟正黑體", sans-serif;
+  letter-spacing: 0.5px;
+}</style><script async src="https://www.googletagmanager.com/gtag/js?id=UA-164526128-1"></script><script>function gtag () { window.dataLayer.push(arguments) }
+const host = location.host.split(':')[0]
+if (host !== 'localhost') {
+  window.dataLayer = window.dataLayer || []
+  window.GA_MEASUREMENT_ID = 'UA-164526128-1'
+  gtag('js', new Date())
+
+  gtag('config', 'UA-164526128-1')
+}</script><div class="navbar navbar-expand-md navbar-light fixed-top"><a class="navbar-brand mx-auto" href="https://yuanchi17.github.io/index.html">YUAN</a></div><style>.navbar {
+  border-bottom: solid 1px #e6e6e6;
+  width: 100%;
+  background-color: #ffffff;
+}
+
+a {
+  color: #333333;
+  font-weight: bold;
+}</style><div class="content container p-3" id="app" v-cloak><div class="row"><div class="col-sm d-flex justify-content-center p-0"><div class="card bg-light mb-3"><h3 class="card-header text-center">猜數字遊戲</h3><div class="card-body"><div class="input-group mb-2" v-for="(question, qId) in questions" :key="qId"><input class="form-control" type="text" v-model="question.userAns"><div class="input-group-append"><select class="custom-select" v-model="question.userResult"><option v-for="(userResult, userResultId) in resultList" :key="userResultId">{{userResult}}</option></select></div></div><div class="button my-3"><button class="btn btn-outline-danger" @click="init">重玩</button></div></div></div></div><div class="col-sm d-flex justify-content-center p-0"><div class="card bg-light mb-3"><h3 class="card-header text-center">提示區</h3><div class="card-body"><p>{{warn}}</p><p>總共有 {{all.length}} 種可能（顯示前 100 種）</p><div class="prediction"><button class="btn btn-outline-success btn-sm mt-1 mr-1" v-for="(n, index) in getAll.slice(0, 100)" :key="index" @click="selectAns(index)">{{getAll[index]}}</button></div></div></div></div></div></div><script src="https://cdn.jsdelivr.net/npm/axios@0.20.0/dist/axios.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lodash@4/lodash.min.js"></script><script src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js"></script><script src="https://cdn.jsdelivr.net/npm/popper.js@1/dist/umd/popper.min.js"></script><script src="https://cdn.jsdelivr.net/npm/qs@6/dist/qs.min.js"></script><script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.all.min.js"></script><script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.min.js"></script><script src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js"></script><script>const resultAll = {
+  '0A0B': 0,
+  '0A1B': 1,
+  '0A2B': 2,
+  '0A3B': 3,
+  '0A4B': 4,
+  '1A0B': 10,
+  '1A1B': 11,
+  '1A2B': 12,
+  '1A3B': 13,
+  '2A0B': 20,
+  '2A1B': 21,
+  '2A2B': 22,
+  '3A0B': 30,
+  '3A1B': 31,
+  '4A0B': 40,
+}
+
+const vm = new Vue({ // eslint-disable-line no-unused-vars
+  el: '#app',
+  data: {
+    warn: '',
+    all: [],
+    result: 0, // 篩選的 result
+    resultList: _.invert(resultAll),
+    questions: [],
+  },
+  mounted () {
+    this.init()
+  },
+  computed: {
+    getAll () {
+      this.all = []
+      this.warn = ''
+      const allQuestion = _.filter(this.questions, q => {
+        if (/^\d{4}$/.test(q.userAns) && _.uniq(q.userAns).length === 4) return q
+      })
+      if (allQuestion.length === 0) {
+        this.warn = '請至少填寫一欄答案（四位不重複數字）'
+        this.all = []
+        return []
+      }
+      for (let n1 = 0; n1 < 10; n1++) {
+        for (let n2 = 0; n2 < 10; n2++) {
+          if (n1 === n2) continue
+          for (let n3 = 0; n3 < 10; n3++) {
+            if (n1 === n3 || n2 === n3) continue
+            for (let n4 = 0; n4 < 10; n4++) {
+              if (n1 === n4 || n2 === n4 || n3 === n4) continue
+
+              const predictAns = ''.concat(n1, n2, n3, n4)
+              let predictCorrect
+              for (const q of allQuestion) {
+                this.result = 0
+                predictCorrect = false
+                for (const number of q.userAns) {
+                  if (predictAns.indexOf(number) === q.userAns.indexOf(number)) {
+                    this.result += 10 // A
+                    continue
+                  }
+                  if (predictAns.includes(number)) this.result++ // B
+                }
+                // 判斷對應到的數字是否與設定的 AB 相同
+                if (this.result === resultAll[q.userResult]) predictCorrect = true
+                if (!predictCorrect) break
+              }
+              if (predictCorrect) this.all.push(predictAns)
+            }
+          }
+        }
+      }
+      this.all = _.uniq(this.all)
+      return this.all // 重複的只留一個
+    },
+  },
+  methods: {
+    init () {
+      this.all = []
+      this.warn = ''
+      this.questions = _.times(8, () => { return { userAns: '', userResult: '0A0B' } })
+    },
+    selectAns (i) {
+      let autoInput = false
+      for (const qId in this.questions) {
+        if (!/^\d{4}$/.test(this.questions[qId].userAns)) {
+          this.questions[qId].userAns = this.all[i]
+          autoInput = true
+        }
+        if (autoInput) return
+        continue
+      }
+    },
+  },
+})</script></body></html>

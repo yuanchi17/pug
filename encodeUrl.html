@@ -1,0 +1,135 @@
+<!DOCTYPE html><html><head><title>編譯網址工具</title><link rel="icon" href="https://i.imgur.com/uvL7e25.png" type="image/x-icon"><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no"><script>(function () {
+  const host = location.host.split(':')[0]
+  if (host === 'localhost') document.write(`<script src="http://${host}:35729/livereload.js?snipver=1"></` + 'script>')
+})()</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4/css/font-awesome.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"></head><body><meta name="description" content="使用 Qs 編譯多個帶參數的網址"><meta property="og:description" content="使用 Qs 編譯多個帶參數的網址"><style>[v-cloak] {
+  display: none;
+}
+
+body {
+  margin-top: 55px;
+}
+
+.input-group-text {
+  background-color: white;
+}
+
+textarea {
+  min-height: 300px;
+}
+
+.nav-tabs {
+  border-bottom: none;
+}
+
+img {
+  border: solid 1px #ddd;
+  width: 100%;
+}</style><style>@charset "UTF-8";
+body {
+  font-family: "Source Sans Pro", Helvetica, Arial, "PingFang TC", "Microsoft JhengHei", "微軟正黑體", sans-serif;
+  letter-spacing: 0.5px;
+}</style><script async src="https://www.googletagmanager.com/gtag/js?id=UA-164526128-1"></script><script>function gtag () { window.dataLayer.push(arguments) }
+const host = location.host.split(':')[0]
+if (host !== 'localhost') {
+  window.dataLayer = window.dataLayer || []
+  window.GA_MEASUREMENT_ID = 'UA-164526128-1'
+  gtag('js', new Date())
+
+  gtag('config', 'UA-164526128-1')
+}</script><div class="navbar navbar-expand-md navbar-light fixed-top"><a class="navbar-brand mx-auto" href="https://yuanchi17.github.io/index.html">YUAN</a></div><style>.navbar {
+  border-bottom: solid 1px #e6e6e6;
+  width: 100%;
+  background-color: #ffffff;
+}
+
+a {
+  color: #333333;
+  font-weight: bold;
+}</style><div class="container text-monospace mb-3" id="app" v-cloak><h3 class="pt-3 m-0">編譯網址工具</h3><div class="input-group my-3"><div class="input-group-prepend"><div class="input-group-text justify-content-end">前面的網址</div></div><input class="form-control" type="text" v-model="s.baseUrl" placeholder="請填寫欲編譯的網址"></div><ul class="nav nav-tabs"><li class="nav-item" @click="nav = 'params'"><a class="nav-link active" id="tab-params" data-toggle="tab" href="#params" role="tab" aria-controls="params" aria-selected="true">一個網址</a></li><li class="nav-item" @click="nav = 'csv'"><a class="nav-link" id="tab-csv" data-toggle="tab" href="#csv" role="tab" aria-controls="csv" aria-selected="false">多個網址</a></li></ul><div class="tab-content"><div class="card tab-pane show active" id="params" role="tabpanel" aria-labelledby="params-tab"><div class="card-body"><div class="d-flex my-2" v-for="(param, pId) of s.params" :key="pId"><div class="input-group"><div class="input-group-prepend"><div class="input-group-text py-0">{{ pId + 1 }}</div></div><input class="form-control" type="text" v-model="param[0]" placeholder="key"><input class="form-control" type="text" v-model="param[1]" placeholder="value"></div><button class="btn btn-danger mx-2" type="button" @click="btnDel(pId)" v-if="s.params.length &gt; 1"><i class="fa fa-times"></i></button><button class="btn btn-success mx-2" type="button" @click="btnAdd" v-else><i class="fa fa-plus"></i></button></div><div class="d-flex"><button class="btn btn-success ml-auto mx-2" type="button" @click="btnAdd" v-if="s.params.length &gt; 1"><i class="fa fa-plus"></i></button></div></div></div><div class="card tab-pane" id="csv" role="tabpanel" aria-labelledby="csv-tab"><div class="card-body"><div class="input-group"><input class="form-control" type="text" v-model="s.csv" placeholder="請填寫 CSV 網址"></div><p class="my-2">CSV 欄位範例</p><img src="https://i.imgur.com/AeqqpCw.png"></div></div></div><button class="btn btn-info my-2" type="button" @click="btnEncodeUrl">編譯網址</button><div class="card" v-if="urls.length"><div class="card-body"><div class="d-flex mb-3"><h5 class="card-title m-0 my-auto mr-2 font-weight-bold">編譯後的所有網址</h5><button class="btn btn-info btn-sm" type="button" @click="btnCopy()">複製</button></div><textarea class="form-control" id="copyUrls" type="text" v-model="urls"></textarea></div></div></div><script src="https://cdn.jsdelivr.net/npm/axios@0.20.0/dist/axios.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lodash@4/lodash.min.js"></script><script src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js"></script><script src="https://cdn.jsdelivr.net/npm/popper.js@1/dist/umd/popper.min.js"></script><script src="https://cdn.jsdelivr.net/npm/qs@6/dist/qs.min.js"></script><script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.all.min.js"></script><script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.min.js"></script><script src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js"></script><script>const SESSION_KEY = 'pug-encodeUrl'
+window.sleep = t => new Promise(resolve => { setTimeout(resolve, t) })
+window.httpBuildQuery = (obj) => Qs.stringify(obj, { arrayFormat: 'brackets' })
+window.vm = new Vue({
+  el: '#app',
+  data: {
+    urls: '',
+    nav: 'params',
+    s: {
+      baseUrl: '',
+      csv: '',
+      params: [['', '']],
+    },
+  },
+  async mounted () {
+    const session = JSON.parse(localStorage.getItem(SESSION_KEY))
+    if (session) this.$set(this, 's', session)
+    this.$watch('s', () => {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(this.s))
+    }, { deep: true })
+  },
+  methods: {
+    async btnEncodeUrl () {
+      try {
+        this.showLoading('請稍後', '編譯網址中')
+        const baseUrl = this.s.baseUrl
+        let row
+        if (this.nav === 'csv') {
+          row = await this.getCsv(this.s.csv)
+          this.urls = _.map(row, r => baseUrl + window.httpBuildQuery(r)).join('\n')
+        } else {
+          row = _.chain(this.s.params)
+            .filter(param => { return param[0] && param[1] })
+            .fromPairs()
+            .value()
+          this.urls = baseUrl + window.httpBuildQuery(row)
+        }
+
+        await window.sleep(100)
+        this.btnCopy(true)
+      } catch (err) {
+        console.error(err)
+        Swal.fire({ icon: 'err', title: '編譯失敗', text: err.message })
+      }
+    },
+    async btnCopy (auto = false) {
+      try {
+        const obj = document.getElementById('copyUrls')
+        obj.select()
+        document.execCommand('copy')
+        if (auto) {
+          Swal.fire({ icon: 'success', title: '編譯成功', text: '已複製' })
+          return
+        }
+        Swal.fire({ icon: 'success', title: '複製成功' })
+      } catch (err) {
+        console.error(err)
+        Swal.fire({ icon: 'err', title: '複製失敗', text: err.message })
+      }
+    },
+    async btnAdd () {
+      const params = _.get(this.s, 'params', [])
+      params.push(['', ''])
+      this.$set(this.s, 'params', params)
+    },
+    async btnDel (pId) {
+      const params = _.get(this.s, 'params', [])
+      params.splice(pId, 1)
+      this.$set(this.s, 'params', params)
+    },
+    async getCsv (url) {
+      const csv = _.trim(_.get(await axios.get(url), 'data')) // _.trim：把前後多餘的空格修掉
+      return _.get(Papa.parse(csv, {
+        encoding: 'utf8',
+        header: true,
+      }), 'data', [])
+    },
+    async showLoading (title, text) {
+      await Swal.fire({
+        title,
+        text,
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => { Swal.showLoading() },
+      })
+    },
+  },
+})</script></body></html>

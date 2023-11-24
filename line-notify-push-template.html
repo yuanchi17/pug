@@ -1,0 +1,293 @@
+<!DOCTYPE html><html><head><title>LINE Notify 推送訊息工具</title><link rel="icon" href="https://i.imgur.com/uvL7e25.png" type="image/x-icon"><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no"><script>(function () {
+  const host = location.host.split(':')[0]
+  if (host === 'localhost') document.write(`<script src="http://${host}:35729/livereload.js?snipver=1"></` + 'script>')
+})()</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4/css/font-awesome.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"></head><body><meta name="description" content="LINE Notify 推送訊息工具"><meta property="og:description" content="LINE Notify 推送訊息工具"><style>[v-cloak] {
+  display: none;
+}
+
+body {
+  margin-top: 55px;
+}
+
+.alert {
+  white-space: pre-wrap;
+}
+
+textarea {
+  min-height: 300px;
+}
+
+.textarea-img {
+  min-height: 40px;
+}</style><style>@charset "UTF-8";
+body {
+  font-family: "Source Sans Pro", Helvetica, Arial, "PingFang TC", "Microsoft JhengHei", "微軟正黑體", sans-serif;
+  letter-spacing: 0.5px;
+}</style><script async src="https://www.googletagmanager.com/gtag/js?id=UA-164526128-1"></script><script>function gtag () { window.dataLayer.push(arguments) }
+const host = location.host.split(':')[0]
+if (host !== 'localhost') {
+  window.dataLayer = window.dataLayer || []
+  window.GA_MEASUREMENT_ID = 'UA-164526128-1'
+  gtag('js', new Date())
+
+  gtag('config', 'UA-164526128-1')
+}</script><div class="navbar navbar-expand-md navbar-light fixed-top"><a class="navbar-brand mx-auto" href="https://yuanchi17.github.io/index.html">YUAN</a></div><style>.navbar {
+  border-bottom: solid 1px #e6e6e6;
+  width: 100%;
+  background-color: #ffffff;
+}
+
+a {
+  color: #333333;
+  font-weight: bold;
+}</style><div class="content container text-monospace mb-3" id="app" v-cloak><h2 class="py-3 m-0">LINE Notify 推送訊息工具</h2><div class="form-group"><label for="inputCsv">CSV 網址（資料會放到參數 <span class="text-danger">row</span>，且以第一列當作 key）</label><input class="form-control" type="text" id="inputCsv" v-model="s.csv" placeholder="請填寫 CSV 網址"></div><div class="card mb-3" v-for="(msg, msgId) in s.msgs" :key="msgId"><div class="card-body"><div class="d-flex"><h5 class="card-title mt-auto mb-0">第 {{ msgId+1 }} 筆訊息</h5><div class="d-flex ml-auto"><button class="btn btn-info btn-sm mr-2" type="button" @click="btnClearMsg(msgId)"><i class="fa fa-fw fa-repeat"></i> 清除</button><button class="btn btn-danger btn-sm" type="button" @click="btnDelMsg(msgId)"><i class="fa fa-times"></i></button></div></div><small class="text-muted">皆可使用 <a class="text-danger" target="_blank" href="https://lodash.com/docs/4.17.15#template">_.template</a> 變數語法</small><div class="row mt-2"><div class="col"><div class="form-group"><label :for="`inputStickerPackageId-${msgId}`">StickerPackageId</label><button class="btn btn-link py-0" type="button" @click="btnStickerTeach"><i class="fa fa-question-circle-o"></i></button><input class="form-control" type="text" :id="`inputStickerPackageId-${msgId}`" v-model="msg.stickerPackageId" placeholder="（選填）"></div></div><div class="col"><div class="form-group"><label :for="`inputStickerId-${msgId}`">StickerId</label><button class="btn btn-link py-0" type="button" @click="btnStickerTeach"><i class="fa fa-question-circle-o"></i></button><input class="form-control" type="text" :id="`inputStickerId-${msgId}`" v-model="msg.stickerId" placeholder="（選填）"></div></div></div><div class="row"><div class="col"><div class="form-group"> <label :for="`inputImgF-${msgId}`">圖片連結（HTTPS）</label><textarea class="textarea-img form-control" type="text" :id="`inputImgF-${msgId}`" v-model="msg.imageFullsize" placeholder="（選填）"></textarea></div></div></div><div class="row"><div class="col"><div class="form-group"> <label :for="`inputImgT-${msgId}`">縮圖連結（HTTPS）</label><textarea class="textarea-img form-control" type="text" :id="`inputImgT-${msgId}`" v-model="msg.imageThumbnail" placeholder="（選填）"></textarea></div></div></div><div class="form-group"> <label :for="`inputMsg-${msgId}`">推送訊息內容</label><textarea class="form-control" type="text" :id="`inputMsg-${msgId}`" v-model="msg.message" placeholder="（必填，可填寫空格）"></textarea></div></div></div><div class="alert alert-danger alert-dismissible fade show mt-3" role="alert" v-if="errors"><p class="m-0">{{ errors }}<br>欲了解詳細錯誤資訊，請按 F12 查看 Console</p><button class="close" type="button" data-dismiss="alert" aria-label="Close" @click="errors = ''"><span aria-hidden>&times;</span></button></div><div class="alert alert-success alert-dismissible fade show mt-3" role="alert" v-if="pushStatus.finish &amp;&amp; pushStatus.success &gt; 0"><p class="m-0">成功推送給 {{ pushStatus.success }}／{{ pushStatus.userCount }} 位使用者 {{ s.msgs.length }} 筆訊息</p><button class="close" type="button" data-dismiss="alert" aria-label="Close"><span aria-hidden>&times;</span></button></div><div class="row-n2"><button class="btn btn-success mx-1 my-1" type="button" @click="btnShareMsg" v-if="s.msgs.length &gt; 0">分享測試訊息</button><button class="btn btn-danger mx-1 my-1" type="button" @click="btnPushMsg" v-if="s.msgs.length &gt; 0">推送訊息</button><button class="btn btn-info mx-1 my-1" type="button" @click="btnAddMsg">新增推送訊息</button><a class="btn btn-outline-info mx-1 my-1" target="_blank" href="https://line.me/R/ti/p/@736cebrk" data-toggle="tooltip" data-placement="top" title="by 和風信使 taichunmin">Flex 開發人員工具</a><a class="btn btn-outline-info mx-1 my-1" target="_blank" href="https://developers.line.biz/en/docs/messaging-api/sticker-list/#sticker-definitions">Sticker 清單</a><a class="btn btn-outline-info mx-1 my-1" target="_blank" href="https://notify-bot.line.me/doc/en/">Notify API 文件</a></div></div><script src="https://cdn.jsdelivr.net/npm/axios@0.20.0/dist/axios.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lodash@4/lodash.min.js"></script><script src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js"></script><script src="https://cdn.jsdelivr.net/npm/popper.js@1/dist/umd/popper.min.js"></script><script src="https://cdn.jsdelivr.net/npm/qs@6/dist/qs.min.js"></script><script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.all.min.js"></script><script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.min.js"></script><script src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js"></script><script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script><script>const loginPromise = (async () => {
+  await liff.init({ liffId: '1654061069-YXLwqzBw' }) // 正式
+  //- await liff.init({ liffId: '1654061069-5ypKqEoK' }) // 開發
+  if (!liff.isLoggedIn()) {
+    liff.login({ redirectUri: location.href })
+    return await new Promise(resolve => {}) // 永遠不會結束的 Promise
+  }
+})()
+const SESSION_KEY = 'pug-line-notify-push-template'
+window.vm = new Vue({
+  el: '#app',
+  data: {
+    errors: '',
+    pushStatus: { success: 0, count: 0, userCount: 0, finish: false }, // 推送狀態
+    s: {
+      csv: '',
+      msgs: [
+        {
+          imageFullsize: '${_.get(row, "imageFullsize", "https://i.imgur.com/o0tEo3q.png")}',  // eslint-disable-line
+          imageThumbnail: '${_.get(row, "imageThumbnail", "https://i.imgur.com/o0tEo3q.png")}',  // eslint-disable-line
+          message: '<% function count(a) { return a+1 } %>\n\n嗨～這是傳給 ${_.get(row, "name", "無使用者")} 的第 ${count(0)} 則預設訊息\n\n請自行更改訊息內容：）', // eslint-disable-line
+          stickerId: '${_.get(row, "stickerId", 106)}', // eslint-disable-line
+          stickerPackageId: '${_.get(row, "stickerPackageId", 1)}', // eslint-disable-line
+        },
+      ],
+    },
+  },
+  async mounted () {
+    await loginPromise
+    this.autoSaveLocalstorage()
+  },
+  methods: {
+    autoSaveLocalstorage () {
+      const session = JSON.parse(localStorage.getItem(SESSION_KEY))
+      if (session) this.$set(this, 's', session)
+      this.$watch('s', () => {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(this.s))
+      }, { deep: true })
+    },
+    async btnPushMsg () {
+      this.$set(this, 'pushStatus', { success: 0, error: 0, userCount: 0, finish: false })
+      try {
+        const data = this.s
+        this.checkMsgs(data.msgs)
+
+        this.showLoading('請稍後', '讀取 CSV 中')
+        const rows = await this.getCsv(data.csv)
+        if (rows.length < 1) throw new Error('無法從此 CSV 內讀取資料')
+        if (!rows[0].access_token) throw new Error('CSV 格式錯誤：缺少參數「access_token」')
+
+        const pushStatus = this.pushStatus
+        pushStatus.userCount = rows.length
+        const result = await Swal.fire({
+          icon: 'warning',
+          title: '準備推送訊息',
+          text: `即將推送給 ${pushStatus.userCount} 位使用者 ${data.msgs.length} 筆訊息！`,
+          showCancelButton: true,
+          showConfirmButton: false,
+          showDenyButton: true,
+          cancelButtonText: '取消',
+          denyButtonText: '推送',
+        })
+        if (!result.isDenied) throw new Error('已取消推送訊息')
+
+        this.showLoading('請稍後', '編譯訊息樣版中')
+        const templateMsgs = this.compileTemplate(data.msgs)
+        this.showLoading('請稍後', `已推送給 0／${pushStatus.userCount} 位使用者`)
+
+        for (const [chunkId, chunk] of _.toPairs(_.chunk(_.toPairs(rows), 50))) {
+          await Promise.all(_.map(chunk, async ([rowId, row]) => {
+            try {
+              const notifyMsgs = _.map(templateMsgs, msg => _.mapValues(msg, m => m({ Qs, _, row })))
+
+              for (const notifyMsg of notifyMsgs) {
+                await this.apiNotify({
+                  accessToken: row.access_token,
+                  notifyMsg,
+                })
+              }
+              pushStatus.success++ // 推送成功
+            } catch (err) {
+              err.message = `第 ${_.parseInt(rowId) + 1} 位發生錯誤: ${_.get(err, 'response.data.message', err.message)}`
+              console.error(err)
+              pushStatus.error++ // 推送失敗
+            }
+          }))
+          this.showLoading('請稍後', `已推送給 ${(_.parseInt(chunkId) + 1) * 50}／${pushStatus.userCount} 位使用者`)
+        }
+        await Swal.fire({ icon: 'success', title: '發送完畢', text: `成功：${pushStatus.success}，失敗：${pushStatus.error}` })
+      } catch (err) {
+        console.error(err)
+        await Swal.fire({ icon: 'error', title: '編譯失敗', text: err.message })
+      }
+      Swal.close()
+      this.pushStatus.finish = true
+    },
+    async btnShareMsg () {
+      const errors = []
+      this.errors = ''
+      this.pushStatus = {}
+      try {
+        const data = this.s
+        if (!liff.isApiAvailable('shareTargetPicker')) throw new Error('不支援 shareTargetPicker，請嘗試更新應用程式版本。')
+        this.checkMsgs(data.msgs)
+
+        this.showLoading('請稍後', '讀取 CSV 中')
+        const row = _.head(await this.getCsv(data.csv))
+        if (!row) throw new Error('無法從此 CSV 內讀取資料')
+
+        this.showLoading('請稍後', '編譯訊息中')
+        const templateMsgs = this.compileTemplate(data.msgs) // 編譯訊息樣版
+        const msgs = _.map(templateMsgs, msg => _.mapValues(msg, m => m({ Qs, _, row }))) // 編譯訊息
+        const chunks = _.chain(msgs) // 轉換成 shareTargetPicker 的訊息格式
+          .map(this.getShareMsgs)
+          .flatten()
+          .chunk(5)
+          .value()
+
+        for (const [chunkNo, chunk] of _.toPairs(chunks)) {
+          this.showLoading('分享測試訊息', `分享 (${_.parseInt(chunkNo) + 1} / ${chunks.length}) 次`)
+          const res = await liff.shareTargetPicker(chunk)
+          if (_.get(res, 'status') !== 'success') throw new Error('傳送失敗')
+        }
+
+        await Swal.fire({ icon: 'success', title: '分享測試訊息成功' })
+      } catch (err) {
+        console.error(err)
+        errors.push(err.message)
+        await Swal.fire({ icon: 'error', title: '分享測試訊息失敗', text: err.message })
+      }
+      this.errors = errors.join('\n')
+    },
+    async btnAddMsg () {
+      this.s.msgs.push({
+        imageFullsize: '${row.imageFullsize}',  // eslint-disable-line
+        imageThumbnail: '${row.imageThumbnail}',  // eslint-disable-line
+        message: '${row.message}',  // eslint-disable-line
+        stickerId: '${row.stickerId}',  // eslint-disable-line
+        stickerPackageId: '${row.stickerPackageId}',  // eslint-disable-line
+      })
+    },
+    async btnDelMsg (msgId) {
+      const result = await Swal.fire({
+        icon: 'warning',
+        title: `即將刪除第 ${msgId + 1} 筆訊息`,
+        showCancelButton: true,
+        cancelButtonText: '取消',
+        confirmButtonText: '確定',
+      })
+      if (!result.value) return
+
+      this.s.msgs.splice(msgId, 1)
+    },
+    async btnClearMsg (msgId) {
+      const result = await Swal.fire({
+        icon: 'warning',
+        title: `即將清空第 ${msgId + 1} 筆訊息的欄位`,
+        showCancelButton: true,
+        cancelButtonText: '取消',
+        confirmButtonText: '確定',
+      })
+      if (!result.value) return
+
+      this.$set(this.s.msgs, msgId, {
+        imageFullsize: '',
+        imageThumbnail: '',
+        message: '',
+        stickerId: '',
+        stickerPackageId: '',
+      })
+    },
+    checkMsgs (msgs) {
+      for (const msg of msgs) {
+        if (!msg.message) throw new Error('推送訊息內容不可為空')
+        if (!!msg.imageFullsize ^ !!msg.imageThumbnail) throw new Error('若要推送圖片，圖片連結不可為空')
+        if (!!msg.stickerPackageId ^ !!msg.stickerId) throw new Error('若要推送貼圖，StickerPackageId 及 StickerId 不可為空')
+      }
+    },
+    getShareMsgs (msg) {
+      return [
+        {
+          type: 'text',
+          text: `【分享測試訊息】${msg.message}`,
+        },
+        ...(msg.stickerId
+          ? [{
+              type: 'image',
+              originalContentUrl: `https://stickershop.line-scdn.net/stickershop/v1/sticker/${msg.stickerId}/android/sticker.png`,
+              previewImageUrl: `https://stickershop.line-scdn.net/stickershop/v1/sticker/${msg.stickerId}/android/sticker.png`,
+            }]
+          : []),
+        ...(msg.imageFullsize
+          ? [{
+              type: 'image',
+              originalContentUrl: msg.imageFullsize,
+              previewImageUrl: msg.imageThumbnail,
+            }]
+          : []),
+      ]
+    },
+    compileTemplate (msgs) {
+      return _.map(msgs, msg => _.mapValues(msg, _.template))
+    },
+    async apiNotify ({ accessToken, notifyMsg }) {
+      try {
+        await axios.post('https://us-central1-youbike2-linebot.cloudfunctions.net/cors-anywhere', Qs.stringify(notifyMsg), {
+          params: { u: 'https://notify-api.line.me/api/notify' },
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        })
+      } catch (err) {
+        err.message = _.get(err, 'response.data.message', err.message)
+        err.status = _.get(err, 'response.status', 500)
+        if (err.status === 401) err.message = `token 已失效 (${accessToken})`
+        throw err
+      }
+    },
+    async getCsv (url) {
+      const csv = _.trim(_.get(await axios.get(url), 'data')) // _.trim：把前後多餘的空格修掉
+      return _.get(Papa.parse(csv, {
+        encoding: 'utf8',
+        header: true,
+      }), 'data', [])
+    },
+    async btnStickerTeach () {
+      const result = await Swal.fire({
+        icon: 'info',
+        title: 'Sticker 查找教學',
+        text: '查看 Sticker 清單，或使用「Flex 開發人員工具」傳送貼圖，即可找到 stickerId 及 packageId',
+        showCancelButton: true,
+        showDenyButton: true,
+        cancelButtonText: '關閉',
+        confirmButtonText: 'Sticker 清單',
+        denyButtonText: 'Flex 開發人員工具',
+      })
+
+      if (result.isDenied) window.open('https://line.me/R/ti/p/@736cebrk')
+      if (result.isConfirmed) window.open('https://developers.line.biz/en/docs/messaging-api/sticker-list/#sticker-definitions')
+    },
+    showLoading (title, text) {
+      Swal.fire({
+        title,
+        text,
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => { Swal.showLoading() },
+      })
+    },
+  },
+})</script></body></html>

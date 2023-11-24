@@ -1,0 +1,350 @@
+<!DOCTYPE html><html><head><title>狼人殺</title><link rel="icon" href="https://i.imgur.com/uvL7e25.png" type="image/x-icon"><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no"><script>(function () {
+  const host = location.host.split(':')[0]
+  if (host === 'localhost') document.write(`<script src="http://${host}:35729/livereload.js?snipver=1"></` + 'script>')
+})()</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4/css/font-awesome.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"></head><body><meta name="description" content="少一個人主持狼人殺嗎？我來幫你主持！"><meta property="og:description" content="少一個人主持狼人殺嗎？我來幫你主持！"><style>[v-cloak] {
+  display: none;
+}
+
+body {
+  background: #323232;
+  color: #fff;
+  margin-top: 55px;
+}
+
+#app {
+  max-width: 760px;
+}
+
+.page {
+  min-height: 65vh;
+}
+
+.card-body {
+  background: #323232;
+}
+
+#page-check .card-body {
+  min-height: 280px;
+}
+
+.btn-secondary {
+  background: #323232;
+  border-color: #ffffff;
+}
+.btn-secondary:hover, .btn-secondary:focus {
+  background: #323232;
+  border-color: #ffffff;
+  box-shadow: none;
+}
+
+video {
+  width: 0px;
+  height: 0px;
+}</style><style>@charset "UTF-8";
+body {
+  font-family: "Source Sans Pro", Helvetica, Arial, "PingFang TC", "Microsoft JhengHei", "微軟正黑體", sans-serif;
+  letter-spacing: 0.5px;
+}</style><script async src="https://www.googletagmanager.com/gtag/js?id=UA-164526128-1"></script><script>function gtag () { window.dataLayer.push(arguments) }
+const host = location.host.split(':')[0]
+if (host !== 'localhost') {
+  window.dataLayer = window.dataLayer || []
+  window.GA_MEASUREMENT_ID = 'UA-164526128-1'
+  gtag('js', new Date())
+
+  gtag('config', 'UA-164526128-1')
+}</script><div class="navbar navbar-expand-md navbar-light fixed-top"><a class="navbar-brand mx-auto" href="https://yuanchi17.github.io/index.html">YUAN</a></div><style>.navbar {
+  border-bottom: solid 1px #e6e6e6;
+  width: 100%;
+  background-color: #ffffff;
+}
+
+a {
+  color: #333333;
+  font-weight: bold;
+}</style><div class="container mt-3" id="app" v-cloak><video :src="`https://raw.githubusercontent.com/yuanchi17/pug/master/src/audio/${process.voice}.mp3`" autoplay></video><div class="page d-flex flex-column" id="page-start" v-if="page === 'start'"><h3 class="text-center my-3">狼人殺</h3><label class="form-check-label mb-2">平民人數</label><input class="form-control mb-3" type="number" min="1" v-model="init.people" placeholder="請輸入"><label class="form-check-label mb-2">狼人人數（不含狼王）</label><input class="form-control mb-3" type="number" min="1" v-model="init.wolf" placeholder="請輸入"><p class="mb-1">特殊角色有…</p><div class="d-flex" id="select-gods"><div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="selectProphet" v-model="init.prophet"><label class="form-check-label" for="selectProphet">預言家</label></div><div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="selectWitch" v-model="init.witch"><label class="form-check-label" for="selectWitch">女巫</label></div><div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="selectHunter" v-model="init.hunter"><label class="form-check-label" for="selectHunter">獵人</label></div></div><div class="d-flex mt-2" id="select-wolfKing"><div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="selectWokfKing" v-model="init.wolfKing"><label class="form-check-label" for="selectWokfKing">狼王</label></div></div><button class="btn btn-secondary my-3" type="button" @click="btnCheckCount">開始遊戲</button></div><div class="page d-flex flex-column" id="page-check" v-else-if="page === 'checkRole'"><h3 class="text-center my-3">狼人殺</h3><div class="card" v-if="checkRole"><div class="card-body d-flex flex-column"><h4 class="card-title text-center my-auto">{{ role.id }} 號，{{ role.name }}</h4><p class="text-center">{{ role.text }}</p><p class="text-center" v-if="playerNo &gt; roles.length">點擊確認後，將手機放置桌面中間</p><p class="text-center" v-else>點擊確認後傳給下一位</p><button class="btn btn-secondary btn-block mt-auto" type="button" @click="btnNextRole()">確認</button></div></div><div class="card" v-else><div class="card-body d-flex flex-column"><h4 class="card-title text-center my-auto" v-if="playerNo === roles.length">所有玩家請將手放置手機附近，遊戲即將開始</h4><h4 class="card-title text-center my-auto" v-else>我是誰？</h4><button class="btn btn-secondary btn-block mt-auto" type="button" @click="btnNextRole(true)">{{ playerNo > roles.length ? '進入黑夜' : '查看角色' }}</button></div></div></div><div class="page d-flex flex-column justify-content-center" id="page-night" v-else-if="page === 'night'"><h3 class="text-center" v-if="process.status === 'close'">{{ getRoleCh }}請閉眼</h3><h3 class="text-center" v-else>{{ getRoleCh }}請睜眼</h3></div><div class="page d-flex flex-column justify-content-center" id="page-wolf" v-else-if="page === 'wolf'"><h3 class="text-center">狼人現身，你們要殺誰？</h3><div class="show-number d-flex flex-wrap justify-content-center"><button class="btn btn-secondary m-1" type="button" @click="btnWolfSkill(r.id)" v-for="r in roles" v-if="r.life">{{ _.padStart(r.id, 2, '0') }} 號</button></div><button class="btn btn-secondary btn-block mt-3" type="button" @click="awaitChangeVoice('wolfUndefined')">沒找到其他狼人</button></div><div class="page d-flex flex-column justify-content-center" id="page-prophet" v-else-if="page === 'prophet'"><h3 class="text-center">預言家，請問你要查誰？</h3><div class="show-number d-flex flex-wrap justify-content-center" v-if="_.get(_.find(roles, { name: '預言家' }), 'life')"><button class="btn btn-secondary m-1" type="button" @click="btnProphetSkill(r.id)" v-for="r in roles" v-if="r.life">{{ _.padStart(r.id, 2, '0') }} 號</button></div><button class="btn btn-secondary m-1" type="button" @click="btnProphetNext()" v-else>你已被殺死，請按我跳過</button></div><div class="page d-flex flex-column justify-content-center" id="page-witch" v-else-if="page === 'witch'"><h3 class="text-center">女巫{{ process.voice === 'witchOpen' ? '請睜眼' : '，你要毒誰？'}}</h3><div class="show-number d-flex flex-wrap justify-content-center" v-if="process.voice === 'witchKill'"><button class="btn btn-secondary m-1" type="button" @click="btnWitchSkill(r.id)" v-for="r in roles" v-if="r.life">{{ _.padStart(r.id, 2, '0') }} 號</button></div></div><div class="page d-flex flex-column justify-content-center" id="page-bright" v-else-if="page === 'bright'"><h3 class="text-center">天亮了，請睜眼</h3><h4 class="text-center">昨晚 {{ willKill.length ? `${_.join(willKill, '、')} 號被殺了` : '是個平安夜'}}</h4><div id="game-ing" v-if="!game.status"><button class="btn btn-secondary btn-block mt-3 mb-1" type="button" @click="pageNight()">天黑了</button><div class="btn-take-one" v-if="hasHunterOrWolfking"><button class="btn btn-secondary btn-block mt-3 mb-1" type="button" @click="page = 'takeOne'">發動技能</button><p class="text-center">只有獵人或狼王可以使用</p></div></div><div class="mt-3" id="game-over" v-else><div class="card show-number"><div class="card-body d-flex flex-column"><h3 class="card-title text-center">{{ game.loser }}陣亡，{{ game.winner }}勝利</h3><p class="text-center"><span v-for="(r, i) in roles">{{ r.id }} 號{{ r.name }}{{ i < roles.length - 1 ? '、' : ''}}</span></p><button class="btn btn-secondary btn-block mt-auto" type="button" @click="page = 'start'">再玩一局</button></div></div></div></div><div class="page d-flex flex-column justify-content-center" id="page-take-one" v-else-if="page === 'takeOne'"><h3 class="text-center">你要帶走誰？</h3><div class="show-number d-flex flex-wrap justify-content-center"><button class="btn btn-secondary m-1" type="button" @click="btnTakeOneSkill(r.id)" v-for="r in roles" v-if="r.life">{{ _.padStart(r.id, 2, '0') }} 號</button></div></div></div><script src="https://cdn.jsdelivr.net/npm/axios@0.20.0/dist/axios.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lodash@4/lodash.min.js"></script><script src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js"></script><script src="https://cdn.jsdelivr.net/npm/popper.js@1/dist/umd/popper.min.js"></script><script src="https://cdn.jsdelivr.net/npm/qs@6/dist/qs.min.js"></script><script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.all.min.js"></script><script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.min.js"></script><script src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2/moment.min.js"></script><script>const ROLES = {
+  people: {
+    name: '平民',
+    type: 'people',
+    text: '努力獲取線索，抓出狼人，不然你也不能幹嘛',
+    skill: {},
+  },
+  prophet: {
+    name: '預言家',
+    type: 'god',
+    text: '每晚可以查驗一名玩家是好人還是狼人',
+    skill: {},
+  },
+  witch: {
+    name: '女巫',
+    type: 'god',
+    text: '有解藥及毒藥各一瓶，使用規則依玩家們為主',
+    skill: { help: 1, kill: 1 },
+  },
+  hunter: {
+    name: '獵人',
+    type: 'god',
+    text: '除被毒殺之外，死後可決定是否要帶走一名玩家',
+    skill: { kill: 1 },
+  },
+  wolf: {
+    name: '狼人',
+    type: 'wolf',
+    text: '每晚皆可與其他狼人討論要殺誰，如果你的夥伴都還活著的話',
+    skill: {},
+  },
+  wolfKing: {
+    name: '狼王',
+    type: 'wolf',
+    text: '每晚皆可與其他狼人討論要殺誰，死後可決定是否要帶走一名玩家',
+    skill: { kill: 1 },
+  },
+}
+const ROLE_LIST = {
+  all: '天黑了',
+  wolf: '狼人',
+  prophet: '預言家',
+  witch: '女巫',
+  hunter: '獵人',
+}
+const SECONDS = 5000 // 等待 5 秒
+
+window.sleep = t => new Promise(resolve => { setTimeout(resolve, t) })
+window.vm = new Vue({
+  el: '#app',
+  data: {
+    page: 'start',
+    init: { // 人數確認會依照順序
+      people: 3,
+      wolf: 3,
+      wolfKing: false,
+      prophet: true,
+      witch: true,
+      hunter: true,
+    },
+    process: { // 更新哪個角色要閉眼睜眼
+      roleEn: '',
+      status: 'close',
+      voice: '', // 要說的音檔名稱
+    },
+    playerNo: 0,
+    role: {},
+    roles: [],
+    willKill: [],
+    checkRole: false,
+    game: { status: false, winner: '', loser: '' },
+  },
+  mounted () {
+  },
+  computed: {
+    hasHunterOrWolfking () { return !!(_.find(this.roles, { name: '獵人' }) || _.find(this.roles, { name: '狼王' })) },
+    getRoleCh () { return _.get(ROLE_LIST, this.process.roleEn, '') },
+    isGameOver () {
+      if (this.page !== 'bright') return false
+      const life = _.groupBy(_.get(_.groupBy(this.roles, 'life'), 'true'), 'type')
+
+      // 好人勝利
+      if (!_.get(life, 'wolf', []).length) {
+        this.game.winner = '好人'
+        this.game.loser = '狼人'
+        return true
+      }
+      // 狼人勝利
+      if (!_.get(life, 'people', []).length || !_.get(life, 'god', []).length) {
+        this.game.winner = '狼人'
+        this.game.loser = !_.get(life, 'people', []).length ? '人類' : '神職'
+        return true
+      }
+
+      return false
+    },
+  },
+  methods: {
+    async btnCheckCount () {
+      // 轉換格式
+      this.roles = _.compact(_.flatten(_.map(this.init, (count, role) => {
+        if (!count) return
+        return _.times(count, () => ({ id: null, life: true, ...ROLES[role] }))
+      })))
+
+      // 玩家人數 = 0
+      if (!this.roles.length) {
+        await Swal.fire({ icon: 'warning', title: '請輸入初始角色' })
+        return
+      }
+      // 玩家人數確認
+      const players = _.chain(this.roles)
+        .groupBy('name')
+        .map((group, role) => group.length === 1 ? role : `${role}*${group.length}`)
+        .value()
+      const result = await Swal.fire({
+        title: '人數確認',
+        text: players.join('、'),
+        showCancelButton: true,
+        cancelButtonText: '調整人數',
+        confirmButtonText: '開始遊戲',
+      })
+      if (!result.isConfirmed) return
+      this.page = 'checkRole'
+    },
+    async btnNextRole (btnCheck = false) {
+      this.checkRole = btnCheck
+      if (!btnCheck) return // 非"確認角色頁面"
+      if (this.playerNo === this.roles.length && btnCheck) {
+        this.pageNight(true) // 全部玩家已確認身分
+        return
+      }
+
+      const role = _.chain(this.roles)
+        .groupBy('id')
+        .get(null)
+        .sample()
+        .set('id', this.playerNo + 1)
+        .value()
+
+      console.log(`確認角色：${role.id} 號，${role.name}`)
+      this.$set(this, 'role', role)
+      this.playerNo++
+    },
+    async pageNight (first = false) {
+      if (first) {
+        console.log('全部玩家已確認身分，遊戲開始')
+        this.roles = _.orderBy(this.roles, 'id')
+      }
+
+      this.willKill = []
+      await this.updateNight('all', 'close', 'night')
+      await this.updateNight('wolf', 'open', 'wolfOpen')
+    },
+    async btnWolfSkill (rId) {
+      if (!await this.checkSelectAlert(`確認要殺 ${rId} 號？`)) return
+
+      this.willKill.push(rId)
+      await this.updateNight('wolf', 'close', 'wolfClose')
+      this.pageProphet()
+    },
+    async pageProphet () {
+      if (!this.init.prophet) return this.pageWitch() // 遊戲初始沒有預言家
+      await this.updateNight('prophet', 'open', 'prophetOpen')
+    },
+    async btnProphetSkill (rId) {
+      if (!await this.checkSelectAlert(`確認要查 ${rId} 號？`)) return
+
+      const isWolf = this.roles[rId - 1].type === 'wolf'
+      await Swal.fire({
+        icon: `${isWolf ? 'error' : 'success'}`,
+        title: `他是${isWolf ? '壞' : '好'}人`,
+        confirmButtonText: '確定',
+      })
+      await this.updateNight('prophet', 'close', 'prophetClose')
+      this.pageWitch()
+    },
+    async pageWitch () {
+      if (!this.init.witch) return this.pageBright() // 遊戲初始沒有女巫
+
+      const witch = _.find(this.roles, { name: '女巫' })
+      // 女巫睜眼，是否要使用解藥
+      await this.updateNight('witch', 'open', 'witchOpen')
+      if (!witch.life) {
+        await this.alert('你已被殺死，但流程還是要跑')
+        await this.awaitChangeVoice('witchKill')
+        await this.alert('等等！別急著走，還有一次XD')
+        await this.updateNight('witch', 'close', 'witchClose')
+        this.pageBright()
+        return
+      }
+
+      await this.askWitchUseHelp(witch)
+      await this.ashWitchUseKill(witch) // 是否要使用毒藥
+    },
+    async askWitchUseHelp (witch) {
+      if (!_.get(witch, 'skill.help')) await this.alert('你已使用過解藥')
+      else {
+        // 是否要使用解藥
+        const result = await Swal.fire({
+          title: `${this.willKill[0]} 號被殺了，你要救他嗎？`,
+          showCancelButton: true,
+          cancelButtonText: '不要',
+          confirmButtonText: '要',
+        })
+        if (result.isConfirmed) {
+          this.willKill = []
+          _.set(_.find(this.roles, { name: '女巫' }), 'skill.help', 0)
+        }
+      }
+    },
+    async ashWitchUseKill (witch) {
+      await this.awaitChangeVoice('witchKill')
+      if (!_.get(witch, 'skill.kill')) {
+        await this.alert('你已使用過毒藥')
+        await this.updateNight('witch', 'close', 'witchClose')
+        this.pageBright()
+        return
+      }
+      const result = await Swal.fire({
+        title: '要使用毒藥嗎？',
+        showCancelButton: true,
+        cancelButtonText: '不要',
+        confirmButtonText: '要',
+      })
+      if (!result.isConfirmed) {
+        await this.updateNight('witch', 'close', 'witchClose')
+        this.pageBright()
+      }
+    },
+    async btnWitchSkill (rId) {
+      if (!await this.checkSelectAlert(`確認要毒 ${rId} 號？`)) return
+
+      this.willKill.push(rId)
+      _.set(_.find(this.roles, { name: '女巫' }), 'skill.kill', 0)
+
+      await this.updateNight('witch', 'close', 'witchClose')
+      this.pageBright()
+    },
+    async pageBright () {
+      await this.awaitChangeVoice('allOpen')
+      const willKill = this.willKill.sort()
+      this.page = 'bright'
+
+      // 平安夜
+      if (!willKill.length) {
+        this.$set(this.process, 'voice', 'safeNight')
+        return
+      }
+      _.each(willKill, rId => { this.roles[rId - 1].life = false })
+      this.game.status = this.isGameOver
+    },
+    async btnTakeOneSkill (rId) { // 獵人、狼王的技能 TODO:發動技能後的流程確認
+      if (!await this.checkSelectAlert(`確認要帶走 ${rId} 號？`)) return
+
+      this.roles[rId - 1].life = false
+      this.page = 'bright'
+      this.game.status = this.isGameOver
+    },
+    async updateNight (roleEn, status, voice) { // 更新哪個角色要閉眼睜眼
+      this.$set(this, 'process', { roleEn, status, voice })
+      this.page = status === 'close' ? 'night' : roleEn
+      await window.sleep(SECONDS)
+    },
+    async checkSelectAlert (title) {
+      return _.get(await Swal.fire({
+        title,
+        showCancelButton: true,
+        cancelButtonText: '重選',
+        confirmButtonText: '確定',
+      }), 'isConfirmed')
+    },
+    async btnProphetNext () {
+      await this.updateNight('prophet', 'close', 'prophetClose')
+      this.pageWitch()
+    },
+    async awaitChangeVoice (voice) {
+      // FIXME: this.process.voice = '' 因為找不到檔案會有 error，但也只能先這樣
+      this.$set(this.process, 'voice', '')
+      await window.sleep(100)
+      this.$set(this.process, 'voice', voice)
+    },
+    async alert (title) {
+      await Swal.fire({ title, confirmButtonText: '確定' })
+    },
+  },
+})</script></body></html>

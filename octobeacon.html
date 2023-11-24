@@ -1,0 +1,210 @@
+<!DOCTYPE html><html><head><title>Beacon 設定工具</title><link rel="icon" href="https://i.imgur.com/uvL7e25.png" type="image/x-icon"><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no"><script>(function () {
+  const host = location.host.split(':')[0]
+  if (host === 'localhost') document.write(`<script src="http://${host}:35729/livereload.js?snipver=1"></` + 'script>')
+})()</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4/css/font-awesome.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"></head><body><meta name="description" content="Beacon 設定工具"><meta property="og:description" content="Beacon 設定工具"><style>[v-cloak] {
+  display: none;
+}
+
+body {
+  margin-top: 55px;
+}
+
+#app {
+  max-width: 760px;
+}
+
+.input-group-text {
+  background-color: #ffffff;
+  min-width: 80px;
+}</style><style>@charset "UTF-8";
+body {
+  font-family: "Source Sans Pro", Helvetica, Arial, "PingFang TC", "Microsoft JhengHei", "微軟正黑體", sans-serif;
+  letter-spacing: 0.5px;
+}</style><script async src="https://www.googletagmanager.com/gtag/js?id=UA-164526128-1"></script><script>function gtag () { window.dataLayer.push(arguments) }
+const host = location.host.split(':')[0]
+if (host !== 'localhost') {
+  window.dataLayer = window.dataLayer || []
+  window.GA_MEASUREMENT_ID = 'UA-164526128-1'
+  gtag('js', new Date())
+
+  gtag('config', 'UA-164526128-1')
+}</script><div class="navbar navbar-expand-md navbar-light fixed-top"><a class="navbar-brand mx-auto" href="https://yuanchi17.github.io/index.html">YUAN</a></div><style>.navbar {
+  border-bottom: solid 1px #e6e6e6;
+  width: 100%;
+  background-color: #ffffff;
+}
+
+a {
+  color: #333333;
+  font-weight: bold;
+}</style><div class="content container p-3" id="app" v-cloak><h3 class="text-center m-0">Beacon 設定工具</h3><div class="d-flex flex-column"><small class="text-center m-0 mb-2 text-muted">Version {{ setting.version || 1}}</small><div class="d-flex justify-content-center mt-2"><button class="btn btn-outline-success btn-sm mx-1 mb-2" type="button" @click="btnSelectDevice">選擇裝置</button><button class="btn btn-outline-primary btn-sm mx-1 mb-2" type="button" @click="btnReadValue">讀取資料</button><button class="btn btn-outline-danger btn-sm mx-1 mb-2" type="button" @click="writeValue">寫入資料</button><button class="btn btn-outline-secondary btn-sm mx-1 mb-2" type="button" @click="setDefault">回復預設</button></div></div><div class="mt-3" id="beacon-list"><div class="card text-monospace"><ul class="list-group"><li class="list-group-item d-flex flex-column" v-for="(beacon, bId) in s.beacons"><div class="d-flex"><h5 class="my-auto">Beacon {{ bId + 1}}</h5><div class="custom-control custom-switch ml-auto"><input class="custom-control-input" type="checkbox" :id="`enabled-${bId}`" v-model="beacon.enabled"><label class="custom-control-label" :for="`enabled-${bId}`">啟用</label></div></div><div class="was-validated" v-if="beacon.enabled"><div class="input-group input-group-sm mt-3"><div class="input-group-prepend"><p class="input-group-text justify-content-end">offset</p></div><input class="form-control text-right" type="text" :id="`offset-${bId}`" v-model="beacon.offset" inputmode="email" maxlength="16" pattern="[A-Fa-f0-9]{16}" required><div class="invalid-feedback text-right">需由 16 進位組成 16 碼</div></div><div class="input-group input-group-sm mt-2"><div class="input-group-prepend"><p class="input-group-text justify-content-end">hwid</p></div><input class="form-control text-right" type="text" :id="`hwid-${bId}`" v-model="beacon.hwid" inputmode="email" maxlength="10" pattern="[A-Fa-f0-9]{10}" required><div class="invalid-feedback text-right">需由 16 進位組成 10 碼</div></div><div class="input-group input-group-sm mt-2"><div class="input-group-prepend"><p class="input-group-text justify-content-end">vendor</p></div><input class="form-control text-right" type="text" :id="`vendor-${bId}`" v-model="beacon.vendor" inputmode="email" maxlength="8" pattern="[A-Fa-f0-9]{8}" required><div class="invalid-feedback text-right">需由 16 進位組成 8 碼</div></div><div class="input-group input-group-sm mt-2"><div class="input-group-prepend"><p class="input-group-text justify-content-end">lot</p></div><input class="form-control text-right" type="text" :id="`lot-${bId}`" v-model="beacon.lot" inputmode="email" maxlength="16" pattern="[A-Fa-f0-9]{16}" required><div class="invalid-feedback text-right">需由 16 進位組成 16 碼</div></div></div></li></ul></div></div></div><script src="https://cdn.jsdelivr.net/npm/axios@0.20.0/dist/axios.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lodash@4/lodash.min.js"></script><script src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js"></script><script src="https://cdn.jsdelivr.net/npm/popper.js@1/dist/umd/popper.min.js"></script><script src="https://cdn.jsdelivr.net/npm/qs@6/dist/qs.min.js"></script><script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.all.min.js"></script><script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.min.js"></script><script src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js"></script><script>const bluetooth = _.get(navigator, 'bluetooth')
+const DEVICE_NAME = 'Octobeacon'
+const UUID_SERVICE = '89798198-0000-0000-0000-000000000000'
+const UUID_CHARACTERISTIC = '89798198-249d-48bd-894e-db156f1a70e6'
+const SESSION_KEY = 'pug-octobeacon'
+
+window.vm = new Vue({
+  el: '#app',
+  data: {
+    device: null,
+    setting: { version: '1' },
+    s: { // 欲存在 localStorage 的資料
+      beacons: [],
+    },
+  },
+  mounted () {
+    this.autoSaveLocalstorage()
+  },
+  methods: {
+    autoSaveLocalstorage () {
+      const session = JSON.parse(localStorage.getItem(SESSION_KEY))
+      session ? this.$set(this, 's', session) : this.setDefault(false)
+      this.$watch('s', () => {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(this.s))
+      }, { deep: true })
+    },
+    async getBluetoothAvailability () {
+      return await _.invoke(navigator, 'bluetooth.getAvailability')
+    },
+    async btnSelectDevice () {
+      try {
+        this.showLoading('請稍後…')
+        if (!await this.getBluetoothAvailability()) throw new Error('您的裝置不支援藍芽功能')
+        await this.bluetoothRequest()
+        await this.gattConnect()
+        await this.btnReadValue()
+        Swal.fire({ icon: 'success', title: '選擇裝置成功', text: `已讀取裝置「${this.device.name}」的資料` })
+      } catch (err) {
+        Swal.fire({ icon: 'error', title: '選擇裝置失敗', text: err.message })
+      }
+    },
+    async bluetoothRequest () {
+      const options = {
+        filters: [{
+          namePrefix: DEVICE_NAME,
+        }],
+        optionalServices: [UUID_SERVICE],
+      }
+      this.device = await bluetooth.requestDevice(options)
+      if (!this.device) throw new Error('未選擇藍芽裝置')
+    },
+    async gattConnect () {
+      const gattServer = await this.device.gatt.connect()
+      if (!gattServer.connected) throw new Error('BluetoothRemoteGATTServer is not connected.')
+      console.log('BluetoothRemoteGATTServer is connected.')
+    },
+    async btnReadValue () {
+      try {
+        await this.checkGattConnect('讀取')
+        const service = await this.device.gatt.getPrimaryService(UUID_SERVICE)
+        const characteristic = await service.getCharacteristic(UUID_CHARACTERISTIC)
+        const readValue = await characteristic.readValue() // 型態：DataView
+        console.log('DataView.buffer: ', readValue.buffer)
+
+        const ts = readValue.getBigUint64(2, true) // 8 byte
+        this.$set(this, 'setting', {
+          version: readValue.getUint8(0).toString(16), // 1 byte
+          enabled: _.padStart(readValue.getUint8(1).toString(2), 8, '0'), // 1 byte
+        })
+
+        for (let i = 0; i < 8; i++) {
+          this.$set(this.s.beacons, i, {
+            enabled: this.setting.enabled[i] === '1',
+            offset: _.padStart((readValue.getBigUint64(10 + 25 * i, true) + ts).toString(16), 16, '0'), // 8 byte
+            hwid: this.getUint8Data(readValue, 18 + 25 * i, 5), // 5 byte
+            vendor: this.getUint8Data(readValue, 23 + 25 * i, 4), // 4 byte
+            lot: this.getUint8Data(readValue, 27 + 25 * i, 8), // 8 byte
+          })
+        }
+        Swal.fire({ icon: 'success', title: '讀取資料成功' })
+      } catch (err) {
+        console.log(err)
+        Swal.fire({ icon: 'error', title: '讀取失敗', text: err.message })
+      }
+      if (_.get(this.device, 'gatt.connected')) this.device.gatt.disconnect() // 斷開藍芽連線
+    },
+    async writeValue () {
+      try {
+        this.checkInput() // 檢查格式
+        await this.checkGattConnect('寫入')
+        const service = await this.device.gatt.getPrimaryService(UUID_SERVICE)
+        const characteristic = await service.getCharacteristic(UUID_CHARACTERISTIC)
+
+        // 新增一個新的 DataView
+        const buffer = new ArrayBuffer(210)
+        const dataView = new DataView(buffer)
+
+        const beacons = this.s.beacons
+        const enabled = _.parseInt(_.map(beacons, beacon => beacon.enabled ? '1' : '0').join(''), 2)
+        dataView.setUint8(0, 1) // version 1
+        dataView.setUint8(1, enabled)
+        dataView.setBigUint64(2, BigInt(0))
+        for (let i = 0; i < 8; i++) {
+          const beacon = beacons[i]
+          dataView.setBigUint64(10 + 25 * i, BigInt(`0x${beacon.offset}`), true)
+          this.setUint8Data(dataView, 18 + 25 * i, beacon.hwid)
+          this.setUint8Data(dataView, 23 + 25 * i, beacon.vendor)
+          this.setUint8Data(dataView, 27 + 25 * i, beacon.lot)
+        }
+        await characteristic.writeValue(dataView)
+        Swal.fire({ icon: 'success', title: '請再次讀取資料確認是否成功寫入' })
+      } catch (err) {
+        console.log(err)
+        Swal.fire({ icon: 'error', title: '寫入失敗', text: err.message })
+      }
+      if (_.get(this.device, 'gatt.connected')) this.device.gatt.disconnect() // 斷開藍芽連線
+    },
+    async checkGattConnect (active) { // 確認有無連線
+      if (_.get(this.device, 'gatt.connected')) return
+      this.showLoading(`${active}中，請稍後…`)
+      if (!await this.getBluetoothAvailability()) throw new Error('您的裝置不支援藍芽功能')
+      if (_.isNil(this.device)) await this.bluetoothRequest()
+      await this.gattConnect()
+    },
+    async setDefault (btn = true) {
+      if (btn) {
+        const result = await Swal.fire({
+          icon: 'warning',
+          text: '確定要清除資料回復預設值？',
+          showCancelButton: true,
+          confirmButtonText: '回復預設',
+          cancelButtonText: '保留資料',
+        })
+        if (!result.value) return
+      }
+      this.$set(this.s, 'beacons', _.times(8, i => ({
+        enabled: true,
+        offset: _.padStart('', 16, '0'),
+        hwid: _.padStart('', 10, '0'),
+        vendor: _.padStart('', 8, '0'),
+        lot: _.padStart('', 16, '0'),
+      })))
+    },
+    showLoading (title, text) {
+      Swal.fire({
+        title,
+        text,
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => { Swal.showLoading() },
+      })
+    },
+    getUint8Data (dataView, start, len) {
+      return _.times(len, i => _.padStart(dataView.getUint8(start + i).toString(16), 2, '0')).join('')
+    },
+    setUint8Data (dataView, start, data) {
+      const chunks = _.map(_.chunk(data, 2), d => d.join(''))
+      return _.each(chunks, (chunk, i) => dataView.setUint8(start + i, _.parseInt(chunk, 16)))
+    },
+    checkInput () {
+      if (this.setting.version !== '1') throw new Error(`Version 需為 1，而不是 ${this.setting.version}`)
+      for (let i = 0; i < this.s.beacons.length; i++) {
+        const beacon = this.s.beacons[i]
+        if (!(/[0-9a-fA-f]{16}/).test(beacon.offset)) throw new Error(`Beacon ${i + 1}：offset 格式錯誤`)
+        if (!(/[0-9a-fA-f]{10}/).test(beacon.hwid)) throw new Error(`Beacon ${i + 1}：hwid 格式錯誤`)
+        if (!(/[0-9a-fA-f]{8}/).test(beacon.vendor)) throw new Error(`Beacon ${i + 1}：vendor 格式錯誤`)
+        if (!(/[0-9a-fA-f]{16}/).test(beacon.lot)) throw new Error(`Beacon ${i + 1}：lot 格式錯誤`)
+      }
+    },
+  },
+})</script></body></html>

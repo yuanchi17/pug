@@ -1,0 +1,160 @@
+<!DOCTYPE html><html><head><title>代辦事項</title><link rel="icon" href="https://i.imgur.com/uvL7e25.png" type="image/x-icon"><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no"><script>(function () {
+  const host = location.host.split(':')[0]
+  if (host === 'localhost') document.write(`<script src="http://${host}:35729/livereload.js?snipver=1"></` + 'script>')
+})()</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4/css/font-awesome.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"></head><body><meta name="description" content="代辦事項"><meta property="og:description" content="代辦事項"><style>[v-cloak] {
+  display: none;
+}
+
+body {
+  background-color: #eee;
+  margin-top: 55px;
+}
+
+#list {
+  box-shadow: 0 2px 0 #999;
+}
+#list ul .button-group {
+  width: 62px;
+}
+#list .list-group-item p {
+  max-width: calc(99% - 62px);
+}
+
+#select.btn:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+input {
+  border-radius: 4px;
+  box-shadow: 0 2px 0 #999;
+}
+
+i.btn-outline-dark, i.btn-outline-primary, i.btn-outline-danger {
+  border: none;
+}
+i.btn-outline-primary:hover {
+  background-color: #ffffff;
+  border-color: #ffffff;
+  border: none;
+  color: #0069d9;
+}
+i.btn-outline-danger:hover {
+  background-color: #ffffff;
+  border-color: #ffffff;
+  border: none;
+  color: #dc3545;
+}</style><style>@charset "UTF-8";
+body {
+  font-family: "Source Sans Pro", Helvetica, Arial, "PingFang TC", "Microsoft JhengHei", "微軟正黑體", sans-serif;
+  letter-spacing: 0.5px;
+}</style><script async src="https://www.googletagmanager.com/gtag/js?id=UA-164526128-1"></script><script>function gtag () { window.dataLayer.push(arguments) }
+const host = location.host.split(':')[0]
+if (host !== 'localhost') {
+  window.dataLayer = window.dataLayer || []
+  window.GA_MEASUREMENT_ID = 'UA-164526128-1'
+  gtag('js', new Date())
+
+  gtag('config', 'UA-164526128-1')
+}</script><div class="navbar navbar-expand-md navbar-light fixed-top"><a class="navbar-brand mx-auto" href="https://yuanchi17.github.io/index.html">YUAN</a></div><style>.navbar {
+  border-bottom: solid 1px #e6e6e6;
+  width: 100%;
+  background-color: #ffffff;
+}
+
+a {
+  color: #333333;
+  font-weight: bold;
+}</style><div class="container pt-3" id="app" v-cloak><div class="d-flex justify-content-center"><form @submit.prevent="addItem()"><input class="form-control mb-3" type="date" v-model="duedate" :min="NOW" placeholder="請選擇日期"><input class="form-control" v-if="showTodoInput" autofocus type="text" v-model="todoItem" placeholder="請輸入代辦事項"></form></div><div class="card mt-3 d-flex justify-content-center" id="list" v-if="allListLen"><div class="card-body d-flex justify-content-between align-items-center"><div class="card-title d-flex align-items-center m-0"><vue-ellipse-progress :progress="progress" color="#007bff" size="30" empty-thickness="1" thickness="1.5" line-mode="out 2" font-size="0.8rem" font-color="blue"></vue-ellipse-progress><p class="m-0 ml-2" style="color:#007bff">進度 {{ doneList.length }} / {{ allListLen }} </p></div><div class="btn-group btn-group-sm" role="group"><button class="btn" id="select" :class="pageIsTodoList ? 'btn-primary' : 'btn-outline-secondary'" type="button" @click="page = 'todo-list'">TODO</button><button class="btn" id="select" :class="!pageIsTodoList ? 'btn-primary' : 'btn-outline-secondary'" type="button" @click="page = 'done-list'">DONE</button></div></div><ul class="list-group list-group-flush" v-if="showTodoList"><li class="list-group-item d-flex justify-content-between align-items-center" :class="item.date &lt; dateToMMDD(NOW) ? 'list-group-item-secondary' : '' " v-for="(item, index) in todoList" :key="index"><p class="m-0 my-auto">{{item.date}}　|　{{item.todo}}</p><div class="button-group"><i class="fa fa-check btn btn-sm" :class="item.date &lt; dateToMMDD(NOW) ? 'btn-outline-dark' : 'btn-outline-primary' " type="button" @click="done(index)"></i><i class="fa fa-trash-o btn btn-sm" :class="item.date &lt; dateToMMDD(NOW) ? 'btn-outline-dark' : 'btn-outline-danger' " type="button" @click="remove(index)"></i></div></li></ul><ul class="list-group list-group-flush" v-if="showDoneList"><li class="list-group-item" v-for="(item, index) in doneList" :key="index"><p class="m-0 my-auto">{{item.date}}　|　{{item.todo}}</p></li></ul><div class="card-body d-flex" v-if="showTodoList || showDoneList"><button class="btn btn-outline-danger btn-sm ml-auto" type="button" @click="pageIsTodoList ? delTodoAll() : delDoneAll()">清空</button></div></div></div><script src="https://cdn.jsdelivr.net/npm/axios@0.20.0/dist/axios.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lodash@4/lodash.min.js"></script><script src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js"></script><script src="https://cdn.jsdelivr.net/npm/popper.js@1/dist/umd/popper.min.js"></script><script src="https://cdn.jsdelivr.net/npm/qs@6/dist/qs.min.js"></script><script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.all.min.js"></script><script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.min.js"></script><script src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2/moment.min.js"></script><script src="https://cdn.jsdelivr.net/npm/vue-ellipse-progress@1/dist/vue-ellipse-progress.umd.min.js"></script><script>const NOW = moment().format('YYYY-MM-DD')
+const dateToMMDD = date => moment(date).format('MM-DD')
+window.vm = new Vue({
+  el: '#app',
+  data: {
+    doneList: [],
+    duedate: '',
+    page: 'todo-list',
+    todoItem: '',
+    todoList: [],
+  },
+  async mounted () {
+    await this.init()
+  },
+  computed: {
+    allListLen () { return this.doneList.length + this.todoList.length },
+    pageIsTodoList () { return this.page === 'todo-list' },
+    progress () { return _.floor((this.doneList.length / this.allListLen) * 100) },
+    showDoneList () { return this.doneList.length && !this.pageIsTodoList },
+    showTodoList () { return this.todoList.length && this.pageIsTodoList },
+    showTodoInput () {
+      if (!this.duedate) this.todoItem = ''
+      return this.duedate
+    },
+  },
+  methods: {
+    init () {
+      this.duedate = NOW
+      const doneList = localStorage.getItem('doneList')
+      const todoList = localStorage.getItem('todoList')
+
+      this.doneList = doneList ? JSON.parse(doneList) : []
+      this.todoList = todoList ? JSON.parse(todoList) : []
+    },
+    done (index) {
+      this.doneList.push(this.todoList[index])
+      this.remove(index)
+      this.saveSession()
+    },
+    addItem () {
+      if (!this.duedate) return this.alert('warning', '請輸入日期')
+      if (_.trim(this.todoItem) === '') return this.alert('warning', '請輸入代辦事項')
+      this.todoList.push({
+        date: dateToMMDD(this.duedate),
+        todo: this.todoItem,
+      })
+      this.todoList = _.sortBy(this.todoList, 'date')
+      this.todoItem = ''
+      this.saveSession()
+    },
+    remove (index) {
+      this.todoList.splice(index, 1)
+      this.saveSession()
+    },
+    saveSession () {
+      localStorage.setItem('doneList', JSON.stringify(this.doneList))
+      localStorage.setItem('todoList', JSON.stringify(this.todoList))
+    },
+    alert (icon, text) {
+      Swal.fire({ text, icon })
+    },
+    async delTodoAll () {
+      const confirm = await Swal.fire({
+        title: '確定要清空「代辦事項」？',
+        text: '清空後無法復原',
+        icon: 'warning',
+        cancelButtonText: '取消',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: '確定',
+        reverseButtons: true,
+        showCancelButton: true,
+      })
+      if (!confirm.value) return
+      localStorage.removeItem('todoList')
+      this.init()
+    },
+    async delDoneAll () {
+      const confirm = await Swal.fire({
+        title: '確定要清空「完成事項」？',
+        text: '清空後無法復原',
+        icon: 'warning',
+        cancelButtonText: '取消',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: '確定',
+        reverseButtons: true,
+        showCancelButton: true,
+      })
+      if (!confirm.value) return
+      localStorage.removeItem('doneList')
+      this.init()
+    },
+  },
+})</script></body></html>
